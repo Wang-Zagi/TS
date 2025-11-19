@@ -1,4 +1,0 @@
-Best validation loss: 0.295636
-Test loss: 1.081486
-Test MSE: 1.081486
-Test MAE: 0.929421
