@@ -13,6 +13,7 @@ dataset/weather/GroupB_120min.csv
 
 # Model checkpoints
 checkpoints/
+checkpoints_test/
 *.pth
 *.pt
 
