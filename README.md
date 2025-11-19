@@ -66,6 +66,11 @@ Multi-scale mixing with decomposable mixing in both past and future.
 
 1. Install dependencies:
 ```bash
+pip install torch numpy pandas matplotlib scikit-learn tqdm einops tensorboard
+```
+
+Or use the requirements file (note: some versions may need adjustment for Python 3.12+):
+```bash
 pip install -r requirements.txt
 ```
 
@@ -75,6 +80,15 @@ cd dataset/weather
 python data_transform.py
 cd ../..
 ```
+
+## Quick Start
+
+Test all models quickly:
+```bash
+python quick_start_baselines.py
+```
+
+This will verify all models are working correctly and show their parameter counts.
 
 ## Usage
 
@@ -277,6 +291,30 @@ Example epoch output:
 Epoch 1/100 | Train Loss: 0.524618 | Val Loss: 0.489123 | Train MSE: 0.524618 | Val MSE: 0.489123 | Train MAE: 0.562341 | Val MAE: 0.541287 | Time: 45.32s
 ```
 
+## Testing
+
+### Unit Tests
+
+Run tests for the Transformer model:
+```bash
+python test_model.py
+```
+
+Run tests for all baseline models:
+```bash
+python test_baselines.py
+```
+
+Run comprehensive tests:
+```bash
+python test_comprehensive.py
+```
+
+Quick start test (all models):
+```bash
+python quick_start_baselines.py
+```
+
 ## Results
 
 Training results are saved to the output directory:
@@ -289,6 +327,7 @@ Training results are saved to the output directory:
 
 ## Requirements
 
+Core dependencies:
 - Python 3.8+
 - PyTorch 2.0+
 - NumPy
@@ -296,5 +335,7 @@ Training results are saved to the output directory:
 - Matplotlib
 - scikit-learn
 - tqdm
+- einops (for TimesNet)
+- tensorboard (for training visualization)
 
 See `requirements.txt` for complete list.
