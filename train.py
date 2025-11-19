@@ -107,7 +107,18 @@ def train_epoch(model, train_loader, criterion, optimizer, device, model_type='t
     total_mse = 0
     
     for X_batch, y_batch in tqdm(train_loader, desc="Training", leave=False):
-        X_batch = X_batch.to(device)
+        # Handle both dict (mixed batches) and tensor inputs
+        if isinstance(X_batch, dict):
+            # Mixed batch: move each component to device
+            X_batch = {
+                'T_30min_hist': X_batch['T_30min_hist'].to(device),
+                'A_10min_hist': X_batch['A_10min_hist'].to(device),
+                'B_120min_hist': X_batch['B_120min_hist'].to(device)
+            }
+        else:
+            # Regular tensor
+            X_batch = X_batch.to(device)
+        
         y_batch = y_batch.to(device)
         
         optimizer.zero_grad()
@@ -159,7 +170,18 @@ def validate(model, val_loader, criterion, device):
     
     with torch.no_grad():
         for X_batch, y_batch in tqdm(val_loader, desc="Validation", leave=False):
-            X_batch = X_batch.to(device)
+            # Handle both dict (mixed batches) and tensor inputs
+            if isinstance(X_batch, dict):
+                # Mixed batch: move each component to device
+                X_batch = {
+                    'T_30min_hist': X_batch['T_30min_hist'].to(device),
+                    'A_10min_hist': X_batch['A_10min_hist'].to(device),
+                    'B_120min_hist': X_batch['B_120min_hist'].to(device)
+                }
+            else:
+                # Regular tensor
+                X_batch = X_batch.to(device)
+            
             y_batch = y_batch.to(device)
             
             # Use autoregressive prediction for validation
