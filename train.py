@@ -1,5 +1,6 @@
 """
-Training script for Transformer time series forecasting.
+Training script for time series forecasting.
+Supports multiple baseline models: Transformer, DLinear, TimesNet, TimeMixer.
 Trains a model to predict 96 timesteps from 192 timesteps of input.
 """
 
@@ -14,10 +15,73 @@ from tqdm import tqdm
 import json
 
 from model import TransformerTS
+from dlinear import DLinear
+from timesnet import TimesNet
+from timemixer import TimeMixer
 from data_loader import get_data_loaders
 
 
-def train_epoch(model, train_loader, criterion, optimizer, device):
+def get_model(args):
+    """
+    Create model based on model_type argument.
+    
+    Args:
+        args: Command line arguments
+    
+    Returns:
+        Model instance
+    """
+    if args.model_type == 'transformer':
+        model = TransformerTS(
+            input_dim=21,
+            output_dim=1,
+            d_model=args.d_model,
+            nhead=args.nhead,
+            num_encoder_layers=args.num_encoder_layers,
+            num_decoder_layers=args.num_decoder_layers,
+            dim_feedforward=args.dim_feedforward,
+            dropout=args.dropout
+        )
+    elif args.model_type == 'dlinear':
+        model = DLinear(
+            seq_len=192,
+            pred_len=96,
+            input_dim=21,
+            output_dim=1,
+            kernel_size=args.kernel_size,
+            individual=args.individual
+        )
+    elif args.model_type == 'timesnet':
+        model = TimesNet(
+            seq_len=192,
+            pred_len=96,
+            input_dim=21,
+            output_dim=1,
+            d_model=args.d_model,
+            d_ff=args.d_ff,
+            num_kernels=args.num_kernels,
+            top_k=args.top_k,
+            e_layers=args.e_layers,
+            dropout=args.dropout
+        )
+    elif args.model_type == 'timemixer':
+        model = TimeMixer(
+            seq_len=192,
+            pred_len=96,
+            input_dim=21,
+            output_dim=1,
+            d_model=args.d_model,
+            d_ff=args.d_ff,
+            e_layers=args.e_layers,
+            dropout=args.dropout
+        )
+    else:
+        raise ValueError(f"Unknown model type: {args.model_type}")
+    
+    return model
+
+
+def train_epoch(model, train_loader, criterion, optimizer, device, model_type='transformer'):
     """Train for one epoch."""
     model.train()
     total_loss = 0
@@ -30,13 +94,16 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         
         optimizer.zero_grad()
         
-        # Teacher forcing: use ground truth as decoder input
-        # For the first prediction, we use zeros
-        decoder_input = torch.zeros(y_batch.size(0), 1, y_batch.size(2)).to(device)
-        decoder_input = torch.cat([decoder_input, y_batch[:, :-1, :]], dim=1)
-        
-        # Forward pass
-        output = model(X_batch, decoder_input)
+        # Forward pass - different for Transformer vs other models
+        if model_type == 'transformer':
+            # Teacher forcing: use ground truth as decoder input
+            # For the first prediction, we use zeros
+            decoder_input = torch.zeros(y_batch.size(0), 1, y_batch.size(2)).to(device)
+            decoder_input = torch.cat([decoder_input, y_batch[:, :-1, :]], dim=1)
+            output = model(X_batch, decoder_input)
+        else:
+            # Direct prediction for other models
+            output = model(X_batch)
         
         # Calculate loss
         loss = criterion(output, y_batch)
@@ -127,17 +194,8 @@ def train(args):
         json.dump(norm_params_save, f)
     
     # Create model
-    print("Creating model...")
-    model = TransformerTS(
-        input_dim=21,
-        output_dim=1,
-        d_model=args.d_model,
-        nhead=args.nhead,
-        num_encoder_layers=args.num_encoder_layers,
-        num_decoder_layers=args.num_decoder_layers,
-        dim_feedforward=args.dim_feedforward,
-        dropout=args.dropout
-    )
+    print(f"Creating {args.model_type} model...")
+    model = get_model(args)
     model = model.to(device)
     
     # Count parameters
@@ -163,7 +221,7 @@ def train(args):
         start_time = time.time()
         
         # Train
-        train_loss, train_mse, train_mae = train_epoch(model, train_loader, criterion, optimizer, device)
+        train_loss, train_mse, train_mae = train_epoch(model, train_loader, criterion, optimizer, device, args.model_type)
         
         # Validate
         val_loss, val_mse, val_mae = validate(model, val_loader, criterion, device)
@@ -253,18 +311,35 @@ def train(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train Transformer for time series forecasting')
+    parser = argparse.ArgumentParser(description='Train time series forecasting models')
+    
+    # Model selection
+    parser.add_argument('--model_type', type=str, default='transformer', 
+                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer'],
+                        help='Model type to use')
     
     # Data parameters
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
     
-    # Model parameters
+    # Common model parameters
     parser.add_argument('--d_model', type=int, default=128, help='Model dimension')
-    parser.add_argument('--nhead', type=int, default=8, help='Number of attention heads')
-    parser.add_argument('--num_encoder_layers', type=int, default=3, help='Number of encoder layers')
-    parser.add_argument('--num_decoder_layers', type=int, default=3, help='Number of decoder layers')
-    parser.add_argument('--dim_feedforward', type=int, default=512, help='Feedforward dimension')
     parser.add_argument('--dropout', type=float, default=0.1, help='Dropout rate')
+    
+    # Transformer-specific parameters
+    parser.add_argument('--nhead', type=int, default=8, help='Number of attention heads (Transformer)')
+    parser.add_argument('--num_encoder_layers', type=int, default=3, help='Number of encoder layers (Transformer)')
+    parser.add_argument('--num_decoder_layers', type=int, default=3, help='Number of decoder layers (Transformer)')
+    parser.add_argument('--dim_feedforward', type=int, default=512, help='Feedforward dimension (Transformer)')
+    
+    # DLinear-specific parameters
+    parser.add_argument('--kernel_size', type=int, default=25, help='Kernel size for moving average (DLinear)')
+    parser.add_argument('--individual', action='store_true', help='Use individual linear layers (DLinear)')
+    
+    # TimesNet-specific parameters
+    parser.add_argument('--d_ff', type=int, default=128, help='FFN dimension (TimesNet, TimeMixer)')
+    parser.add_argument('--num_kernels', type=int, default=6, help='Number of kernels in Inception block (TimesNet)')
+    parser.add_argument('--top_k', type=int, default=5, help='Number of top periods (TimesNet)')
+    parser.add_argument('--e_layers', type=int, default=2, help='Number of encoder layers (TimesNet, TimeMixer)')
     
     # Training parameters
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
