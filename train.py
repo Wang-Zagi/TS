@@ -19,7 +19,7 @@ from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
 from itransformer import iTransformer
-from data_loader import get_data_loaders
+from data_loader import get_data_loaders, get_mixed_data_loaders
 
 
 def get_model(args):
@@ -77,6 +77,9 @@ def get_model(args):
             dropout=args.dropout
         )
     elif args.model_type == 'itransformer':
+        # iTransformer uses mixed batches with different sequence lengths per variable
+        # seq_lens: [192, 574, 574, ..., 48, 48] (1 T, 10 A, 10 B variables)
+        seq_lens = [192] + [574] * 10 + [48] * 10  # T(1) + GroupA(10) + GroupB(10)
         model = iTransformer(
             seq_len=192,
             pred_len=96,
@@ -86,7 +89,9 @@ def get_model(args):
             nhead=args.nhead,
             num_layers=args.num_encoder_layers,
             dim_feedforward=args.dim_feedforward,
-            dropout=args.dropout
+            dropout=args.dropout,
+            use_mixed_batches=True,
+            seq_lens=seq_lens
         )
     else:
         raise ValueError(f"Unknown model type: {args.model_type}")
@@ -189,20 +194,42 @@ def train(args):
     
     # Load data
     print("Loading data...")
-    train_loader, val_loader, test_loader, norm_params = get_data_loaders(
-        batch_size=args.batch_size,
-        history_len=192,
-        future_len=96,
-        step_size=96
-    )
+    if args.model_type == 'itransformer':
+        # Use mixed frequency batches for iTransformer
+        train_loader, val_loader, test_loader, norm_params = get_mixed_data_loaders(
+            batch_size=args.batch_size,
+            history_len=192,
+            future_len=96,
+            step_size=96
+        )
+    else:
+        # Use aligned batches for other models
+        train_loader, val_loader, test_loader, norm_params = get_data_loaders(
+            batch_size=args.batch_size,
+            history_len=192,
+            future_len=96,
+            step_size=96
+        )
     
     # Save normalization parameters
-    norm_params_save = {
-        'X_mean': norm_params['X_mean'].tolist(),
-        'X_std': norm_params['X_std'].tolist(),
-        'y_mean': float(norm_params['y_mean']),
-        'y_std': float(norm_params['y_std'])
-    }
+    if args.model_type == 'itransformer':
+        norm_params_save = {
+            'T_mean': norm_params['T_mean'].tolist(),
+            'T_std': norm_params['T_std'].tolist(),
+            'A_mean': norm_params['A_mean'].tolist(),
+            'A_std': norm_params['A_std'].tolist(),
+            'B_mean': norm_params['B_mean'].tolist(),
+            'B_std': norm_params['B_std'].tolist(),
+            'y_mean': float(norm_params['y_mean']),
+            'y_std': float(norm_params['y_std'])
+        }
+    else:
+        norm_params_save = {
+            'X_mean': norm_params['X_mean'].tolist(),
+            'X_std': norm_params['X_std'].tolist(),
+            'y_mean': float(norm_params['y_mean']),
+            'y_std': float(norm_params['y_std'])
+        }
     with open(os.path.join(args.output_dir, 'norm_params.json'), 'w') as f:
         json.dump(norm_params_save, f)
     

@@ -11,6 +11,13 @@ Key differences from standard Transformer:
 - Each variable has its own embedding layer (to handle different frequencies)
 - Attention is computed across variables instead of time
 - Only predicts temperature (T) - the first output variable
+
+Mixed Batches Support:
+- When use_mixed_batches=True, the model accepts dictionary input with different
+  frequency data for different variable groups (T, Group A, Group B)
+- Each variable gets its own embedding layer with appropriate sequence length
+- This allows the model to handle variables with different sampling frequencies
+  without resampling (preserving original frequency information)
 """
 
 import torch
@@ -98,7 +105,9 @@ class iTransformer(nn.Module):
         nhead: int = 8,
         num_layers: int = 3,
         dim_feedforward: int = 512,
-        dropout: float = 0.1
+        dropout: float = 0.1,
+        use_mixed_batches: bool = False,
+        seq_lens: list = None
     ):
         super().__init__()
         self.seq_len = seq_len
@@ -106,12 +115,26 @@ class iTransformer(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.d_model = d_model
+        self.use_mixed_batches = use_mixed_batches
         
         # Individual embedding for each variable
         # This is necessary because different variables may have different frequency characteristics
-        self.variable_embeddings = nn.ModuleList([
-            VariableEmbedding(seq_len, d_model) for _ in range(input_dim)
-        ])
+        # When use_mixed_batches=True, each variable has a different sequence length
+        if use_mixed_batches and seq_lens is not None:
+            # seq_lens should be [192, 574, 574, ..., 48, 48, ...]
+            # 1 variable with 192 timesteps (T)
+            # 10 variables with 574 timesteps (Group A)
+            # 10 variables with 48 timesteps (Group B)
+            self.seq_lens = seq_lens
+            self.variable_embeddings = nn.ModuleList([
+                VariableEmbedding(seq_lens[i], d_model) for i in range(input_dim)
+            ])
+        else:
+            # Original behavior: all variables have the same sequence length
+            self.seq_lens = [seq_len] * input_dim
+            self.variable_embeddings = nn.ModuleList([
+                VariableEmbedding(seq_len, d_model) for _ in range(input_dim)
+            ])
         
         # Positional encoding for variable positions
         self.pos_encoder = PositionalEncoding(d_model, max_vars=input_dim)
@@ -138,25 +161,61 @@ class iTransformer(nn.Module):
     def forward(self, x, *args, **kwargs):
         """
         Args:
-            x: Input sequence (batch_size, seq_len, input_dim)
-               where input_dim is the number of variables
+            x: Input can be:
+               - Tensor of shape (batch_size, seq_len, input_dim) for aligned batches
+               - Dict with keys ['T_30min_hist', 'A_10min_hist', 'B_120min_hist'] for mixed batches
         
         Returns:
             Output sequence (batch_size, pred_len, output_dim)
         """
-        batch_size = x.size(0)
-        
-        # Embed each variable separately
-        # x: (batch_size, seq_len, input_dim)
-        # We need to process each variable's time series through its own embedding
-        
-        embedded_vars = []
-        for i in range(self.input_dim):
-            # Extract i-th variable's time series: (batch_size, seq_len)
-            var_series = x[:, :, i]
-            # Embed: (batch_size, seq_len) -> (batch_size, d_model)
-            var_embedded = self.variable_embeddings[i](var_series)
-            embedded_vars.append(var_embedded)
+        # Handle mixed batches (dict input)
+        if isinstance(x, dict):
+            # x is a dictionary with different frequency data
+            # Expected keys: 'T_30min_hist', 'A_10min_hist', 'B_120min_hist'
+            batch_size = x['T_30min_hist'].size(0)
+            
+            embedded_vars = []
+            var_idx = 0
+            
+            # Process T (30min) - 1 variable with 192 timesteps
+            T_data = x['T_30min_hist']  # (batch_size, 192, 1)
+            for i in range(T_data.size(2)):
+                var_series = T_data[:, :, i]  # (batch_size, 192)
+                var_embedded = self.variable_embeddings[var_idx](var_series)
+                embedded_vars.append(var_embedded)
+                var_idx += 1
+            
+            # Process Group A (10min) - 10 variables with 574 timesteps
+            A_data = x['A_10min_hist']  # (batch_size, 574, 10)
+            for i in range(A_data.size(2)):
+                var_series = A_data[:, :, i]  # (batch_size, 574)
+                var_embedded = self.variable_embeddings[var_idx](var_series)
+                embedded_vars.append(var_embedded)
+                var_idx += 1
+            
+            # Process Group B (120min) - 10 variables with 48 timesteps
+            B_data = x['B_120min_hist']  # (batch_size, 48, 10)
+            for i in range(B_data.size(2)):
+                var_series = B_data[:, :, i]  # (batch_size, 48)
+                var_embedded = self.variable_embeddings[var_idx](var_series)
+                embedded_vars.append(var_embedded)
+                var_idx += 1
+            
+        else:
+            # Original behavior: x is a tensor (batch_size, seq_len, input_dim)
+            batch_size = x.size(0)
+            
+            # Embed each variable separately
+            # x: (batch_size, seq_len, input_dim)
+            # We need to process each variable's time series through its own embedding
+            
+            embedded_vars = []
+            for i in range(self.input_dim):
+                # Extract i-th variable's time series: (batch_size, seq_len)
+                var_series = x[:, :, i]
+                # Embed: (batch_size, seq_len) -> (batch_size, d_model)
+                var_embedded = self.variable_embeddings[i](var_series)
+                embedded_vars.append(var_embedded)
         
         # Stack all variables: (batch_size, input_dim, d_model)
         # Now each "token" represents a variable (not a time step)
