@@ -9,6 +9,7 @@ from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
 from itransformer import iTransformer
+from patchtst import PatchTST
 
 
 def quick_test_all_models():
@@ -28,7 +29,9 @@ def quick_test_all_models():
     
     # Create dummy input
     x = torch.randn(batch_size, seq_len, input_dim)
+    x_univariate = torch.randn(batch_size, seq_len, 1)  # For PatchTST
     print(f"\nInput shape: {x.shape}")
+    print(f"Univariate input shape (for PatchTST): {x_univariate.shape}")
     print(f"Expected output shape: ({batch_size}, {pred_len}, {output_dim})")
     
     models = {
@@ -83,6 +86,17 @@ def quick_test_all_models():
             dim_feedforward=256,
             dropout=0.1
         ),
+        'PatchTST': PatchTST(
+            seq_len=seq_len,
+            pred_len=pred_len,
+            patch_len=16,
+            stride=8,
+            d_model=64,
+            nhead=4,
+            num_layers=2,
+            dim_feedforward=256,
+            dropout=0.1
+        ),
     }
     
     print("\n" + "-" * 70)
@@ -94,10 +108,13 @@ def quick_test_all_models():
             # Count parameters
             num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
             
-            # Test prediction
+            # Test prediction - use univariate input for PatchTST
             model.eval()
             with torch.no_grad():
-                output = model.predict(x, future_len=pred_len)
+                if name == 'PatchTST':
+                    output = model.predict(x_univariate, future_len=pred_len)
+                else:
+                    output = model.predict(x, future_len=pred_len)
             
             # Check output shape
             assert output.shape == (batch_size, pred_len, output_dim), \

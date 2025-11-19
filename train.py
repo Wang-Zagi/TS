@@ -19,7 +19,8 @@ from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
 from itransformer import iTransformer
-from data_loader import get_data_loaders, get_mixed_data_loaders
+from patchtst import PatchTST
+from data_loader import get_data_loaders, get_mixed_data_loaders, get_single_data_loaders
 
 
 def get_model(args):
@@ -92,6 +93,19 @@ def get_model(args):
             dropout=args.dropout,
             use_mixed_batches=True,
             seq_lens=seq_lens
+        )
+    elif args.model_type == 'patchtst':
+        # PatchTST uses single variable (temperature) input
+        model = PatchTST(
+            seq_len=192,
+            pred_len=96,
+            patch_len=args.patch_len,
+            stride=args.stride,
+            d_model=args.d_model,
+            nhead=args.nhead,
+            num_layers=args.num_encoder_layers,
+            dim_feedforward=args.dim_feedforward,
+            dropout=args.dropout
         )
     else:
         raise ValueError(f"Unknown model type: {args.model_type}")
@@ -219,6 +233,14 @@ def train(args):
     if args.model_type == 'itransformer':
         # Use mixed frequency batches for iTransformer
         train_loader, val_loader, test_loader, norm_params = get_mixed_data_loaders(
+            batch_size=args.batch_size,
+            history_len=192,
+            future_len=96,
+            step_size=96
+        )
+    elif args.model_type == 'patchtst':
+        # Use single variable (temperature) batches for PatchTST
+        train_loader, val_loader, test_loader, norm_params = get_single_data_loaders(
             batch_size=args.batch_size,
             history_len=192,
             future_len=96,
@@ -377,7 +399,7 @@ def main():
     
     # Model selection
     parser.add_argument('--model_type', type=str, default='transformer', 
-                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer', 'itransformer'],
+                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer', 'itransformer', 'patchtst'],
                         help='Model type to use')
     
     # Data parameters
@@ -402,6 +424,10 @@ def main():
     parser.add_argument('--num_kernels', type=int, default=6, help='Number of kernels in Inception block (TimesNet)')
     parser.add_argument('--top_k', type=int, default=5, help='Number of top periods (TimesNet)')
     parser.add_argument('--e_layers', type=int, default=2, help='Number of encoder layers (TimesNet, TimeMixer)')
+    
+    # PatchTST-specific parameters
+    parser.add_argument('--patch_len', type=int, default=16, help='Patch length (PatchTST)')
+    parser.add_argument('--stride', type=int, default=8, help='Stride for patching (PatchTST)')
     
     # Training parameters
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
