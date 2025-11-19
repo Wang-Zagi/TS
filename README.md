@@ -1,6 +1,6 @@
-# Time Series Forecasting with Transformer
+# Time Series Forecasting with Multiple Baseline Models
 
-This repository implements a Transformer-based model for weather time series forecasting.
+This repository implements multiple state-of-the-art models for weather time series forecasting, including Transformer, DLinear, TimesNet, and TimeMixer.
 
 ## Task Description
 
@@ -21,17 +21,55 @@ TS/
 │       └── create_batches.py     # Batch creation utilities
 ├── embed.py                      # Data embedding modules (TokenEmbedding, PositionalEmbedding, etc.)
 ├── model.py                      # Transformer model implementation
+├── dlinear.py                    # DLinear model implementation
+├── timesnet.py                   # TimesNet model implementation
+├── timemixer.py                  # TimeMixer model implementation
 ├── data_loader.py               # Data loading and preprocessing
 ├── train.py                     # Training script with MAE/MSE metrics
 ├── evaluate.py                  # Evaluation and visualization script
-├── test_model.py                # Model unit tests
+├── test_model.py                # Transformer model unit tests
+├── test_baselines.py            # Baseline models unit tests
 ├── requirements.txt             # Python dependencies
 └── README.md                    # This file
 ```
 
+## Models
+
+### 1. Transformer
+Standard Transformer encoder-decoder architecture with advanced data embedding.
+- **Paper**: Attention Is All You Need (NeurIPS 2017)
+- **Parameters**: ~1.4M (default configuration)
+- **Features**: Multi-head attention, teacher forcing, autoregressive prediction
+
+### 2. DLinear
+Simple yet effective decomposition-based linear model.
+- **Paper**: Are Transformers Effective for Time Series Forecasting? (AAAI 2023)
+- **Parameters**: ~37K (default configuration)
+- **Features**: Trend-seasonal decomposition, individual or shared linear layers
+- **Advantages**: Fast training, few parameters, strong baseline
+
+### 3. TimesNet
+Multi-period modeling using 2D convolution on transformed 1D time series.
+- **Paper**: TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis (ICLR 2023)
+- **Parameters**: ~4.7M (default configuration)
+- **Features**: FFT-based period detection, Inception blocks, multi-scale feature extraction
+- **Advantages**: Captures complex temporal patterns
+
+### 4. TimeMixer
+Multi-scale mixing with decomposable mixing in both past and future.
+- **Paper**: TimeMixer: Decomposable Multiscale Mixing for Time Series Forecasting (ICLR 2024)
+- **Parameters**: ~424K (default configuration)
+- **Features**: Multi-scale decomposition, temporal and feature mixing
+- **Advantages**: Efficient multi-scale modeling
+
 ## Installation
 
 1. Install dependencies:
+```bash
+pip install torch numpy pandas matplotlib scikit-learn tqdm einops tensorboard
+```
+
+Or use the requirements file (note: some versions may need adjustment for Python 3.12+):
 ```bash
 pip install -r requirements.txt
 ```
@@ -43,40 +81,86 @@ python data_transform.py
 cd ../..
 ```
 
+## Quick Start
+
+Test all models quickly:
+```bash
+python quick_start_baselines.py
+```
+
+This will verify all models are working correctly and show their parameter counts.
+
 ## Usage
 
 ### Training
 
-Train the model with default parameters:
+Train with default Transformer model:
 ```bash
 python train.py
 ```
 
-Train with custom parameters:
+Train with DLinear:
 ```bash
-python train.py --epochs 100 --batch_size 32 --lr 0.0001 --d_model 128 --nhead 8 --output_dir ./checkpoints
+python train.py --model_type dlinear --lr 0.001
 ```
 
-Available arguments:
+Train with TimesNet:
+```bash
+python train.py --model_type timesnet --d_model 64 --e_layers 2
+```
+
+Train with TimeMixer:
+```bash
+python train.py --model_type timemixer --d_model 64 --d_ff 128 --e_layers 2
+```
+
+### Common Arguments
+
+- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`) (default: `transformer`)
 - `--batch_size`: Batch size (default: 32)
 - `--d_model`: Model dimension (default: 128)
-- `--nhead`: Number of attention heads (default: 8)
-- `--num_encoder_layers`: **Number of encoder layers - controllable stacking** (default: 3)
-- `--num_decoder_layers`: **Number of decoder layers - controllable stacking** (default: 3)
-- `--dim_feedforward`: Feedforward dimension (default: 512)
 - `--dropout`: Dropout rate (default: 0.1)
 - `--epochs`: Number of training epochs (default: 100)
 - `--lr`: Learning rate (default: 0.0001)
 - `--patience`: Early stopping patience (default: 15)
 - `--output_dir`: Output directory for checkpoints (default: ./checkpoints)
 
-**Note**: You can control the model depth by adjusting `num_encoder_layers` and `num_decoder_layers`. For example:
-```bash
-# Shallow model (faster, fewer parameters)
-python train.py --num_encoder_layers 2 --num_decoder_layers 2
+### Model-Specific Arguments
 
-# Deep model (more capacity)
-python train.py --num_encoder_layers 6 --num_decoder_layers 6
+**Transformer:**
+- `--nhead`: Number of attention heads (default: 8)
+- `--num_encoder_layers`: Number of encoder layers (default: 3)
+- `--num_decoder_layers`: Number of decoder layers (default: 3)
+- `--dim_feedforward`: Feedforward dimension (default: 512)
+
+**DLinear:**
+- `--kernel_size`: Kernel size for moving average (default: 25)
+- `--individual`: Use individual linear layers for each feature (flag)
+
+**TimesNet:**
+- `--d_ff`: FFN dimension (default: 128)
+- `--num_kernels`: Number of kernels in Inception block (default: 6)
+- `--top_k`: Number of top periods to use (default: 5)
+- `--e_layers`: Number of encoder layers (default: 2)
+
+**TimeMixer:**
+- `--d_ff`: FFN dimension (default: 128)
+- `--e_layers`: Number of encoder layers (default: 2)
+
+### Examples
+
+```bash
+# Shallow Transformer (faster, fewer parameters)
+python train.py --model_type transformer --num_encoder_layers 2 --num_decoder_layers 2
+
+# Deep Transformer (more capacity)
+python train.py --model_type transformer --num_encoder_layers 6 --num_decoder_layers 6
+
+# DLinear with individual layers
+python train.py --model_type dlinear --individual --lr 0.001
+
+# Larger TimesNet
+python train.py --model_type timesnet --d_model 128 --e_layers 3 --top_k 7
 ```
 
 ### Evaluation
@@ -93,9 +177,11 @@ This will:
 - Generate visualization plots
 - Save results to the output directory
 
-## Model Architecture
+## Model Architectures
 
-The model uses a standard Transformer encoder-decoder architecture with advanced data embedding:
+### Transformer
+
+The Transformer uses a standard encoder-decoder architecture with advanced data embedding:
 
 1. **DataEmbedding Layer**: 
    - **TokenEmbedding**: 1D convolution for feature extraction
@@ -113,6 +199,48 @@ Key features:
 - Learning rate scheduling
 - Early stopping
 - **MAE and MSE metrics** tracked during training and validation
+
+### DLinear
+
+DLinear uses a simple yet effective decomposition approach:
+
+1. **Series Decomposition**: Separates input into trend and seasonal components using moving average
+2. **Linear Projection**: Applies separate linear layers to trend and seasonal components
+3. **Combination**: Sums the predictions from both components
+
+Key features:
+- Very fast training and inference
+- Minimal parameters
+- Strong baseline performance
+- Optional individual linear layers for each feature
+
+### TimesNet
+
+TimesNet transforms 1D time series into 2D representations to capture multi-period patterns:
+
+1. **FFT-based Period Detection**: Identifies top-k periods in the time series
+2. **2D Reshaping**: Transforms 1D sequences into 2D tensors based on detected periods
+3. **Inception Blocks**: Multi-scale 2D convolution for feature extraction
+4. **Adaptive Aggregation**: Combines features from different periods with learned weights
+
+Key features:
+- Captures complex temporal patterns
+- Multi-scale feature extraction
+- Period-aware modeling
+
+### TimeMixer
+
+TimeMixer uses multi-scale decomposable mixing:
+
+1. **Multi-scale Decomposition**: Decomposes input at multiple scales (e.g., kernel sizes 3, 5, 7)
+2. **Mixing Layers**: Applies temporal and feature mixing at each scale
+3. **Aggregation**: Combines features from all scales
+4. **Adaptive Pooling**: Projects to prediction length
+
+Key features:
+- Efficient multi-scale modeling
+- Both temporal and feature mixing
+- Decomposition at multiple scales
 
 ## Data Processing
 
@@ -163,6 +291,30 @@ Example epoch output:
 Epoch 1/100 | Train Loss: 0.524618 | Val Loss: 0.489123 | Train MSE: 0.524618 | Val MSE: 0.489123 | Train MAE: 0.562341 | Val MAE: 0.541287 | Time: 45.32s
 ```
 
+## Testing
+
+### Unit Tests
+
+Run tests for the Transformer model:
+```bash
+python test_model.py
+```
+
+Run tests for all baseline models:
+```bash
+python test_baselines.py
+```
+
+Run comprehensive tests:
+```bash
+python test_comprehensive.py
+```
+
+Quick start test (all models):
+```bash
+python quick_start_baselines.py
+```
+
 ## Results
 
 Training results are saved to the output directory:
@@ -175,6 +327,7 @@ Training results are saved to the output directory:
 
 ## Requirements
 
+Core dependencies:
 - Python 3.8+
 - PyTorch 2.0+
 - NumPy
@@ -182,5 +335,7 @@ Training results are saved to the output directory:
 - Matplotlib
 - scikit-learn
 - tqdm
+- einops (for TimesNet)
+- tensorboard (for training visualization)
 
 See `requirements.txt` for complete list.
