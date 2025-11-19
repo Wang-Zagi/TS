@@ -1,6 +1,6 @@
 # Time Series Forecasting with Multiple Baseline Models
 
-This repository implements multiple state-of-the-art models for weather time series forecasting, including Transformer, DLinear, TimesNet, and TimeMixer.
+This repository implements multiple state-of-the-art models for weather time series forecasting, including Transformer, DLinear, TimesNet, TimeMixer, iTransformer, and PatchTST.
 
 ## Task Description
 
@@ -25,6 +25,7 @@ TS/
 ├── timesnet.py                   # TimesNet model implementation
 ├── timemixer.py                  # TimeMixer model implementation
 ├── itransformer.py               # iTransformer model implementation
+├── patchtst.py                   # PatchTST model implementation
 ├── data_loader.py               # Data loading and preprocessing
 ├── train.py                     # Training script with MAE/MSE metrics
 ├── evaluate.py                  # Evaluation and visualization script
@@ -70,6 +71,14 @@ Inverted Transformer that treats variables as tokens instead of time steps.
 - **Parameters**: ~366K (default configuration)
 - **Features**: Variable-wise attention, individual variable embeddings, captures inter-variable dependencies
 - **Advantages**: Better multivariate modeling, handles different variable frequencies
+
+### 6. PatchTST
+Channel-independent patching-based Transformer for univariate forecasting.
+- **Paper**: A Time Series is Worth 64 Words: Long-term Forecasting with Transformers (ICLR 2023)
+- **Parameters**: ~243K (default configuration with patch_len=16, stride=8)
+- **Features**: Patching mechanism, channel independence, univariate forecasting, positional encoding
+- **Advantages**: Efficient computation through patching, works with single variable (temperature only)
+- **Input**: Only temperature (T) - uses `create_single_batches()` for univariate data
 
 ## Installation
 
@@ -135,9 +144,14 @@ Train with iTransformer:
 python train.py --model_type itransformer --d_model 128 --nhead 8 --num_encoder_layers 3
 ```
 
+Train with PatchTST (univariate - temperature only):
+```bash
+python train.py --model_type patchtst --d_model 128 --nhead 8 --num_encoder_layers 3 --patch_len 16 --stride 8
+```
+
 ### Common Arguments
 
-- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`, `itransformer`) (default: `transformer`)
+- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`, `itransformer`, `patchtst`) (default: `transformer`)
 - `--batch_size`: Batch size (default: 32)
 - `--d_model`: Model dimension (default: 128)
 - `--dropout`: Dropout rate (default: 0.1)
@@ -174,6 +188,13 @@ python train.py --model_type itransformer --d_model 128 --nhead 8 --num_encoder_
 - `--d_ff`: FFN dimension (default: 128)
 - `--e_layers`: Number of encoder layers (default: 2)
 
+**PatchTST:**
+- `--nhead`: Number of attention heads (default: 8)
+- `--num_encoder_layers`: Number of encoder layers (default: 3)
+- `--dim_feedforward`: Feedforward dimension (default: 512)
+- `--patch_len`: Patch length (default: 16)
+- `--stride`: Stride for patching (default: 8)
+
 ### Examples
 
 ```bash
@@ -188,6 +209,9 @@ python train.py --model_type dlinear --individual --lr 0.001
 
 # Larger TimesNet
 python train.py --model_type timesnet --d_model 128 --e_layers 3 --top_k 7
+
+# PatchTST with smaller patches (univariate)
+python train.py --model_type patchtst --patch_len 8 --stride 4 --d_model 64
 ```
 
 ### Evaluation
@@ -284,6 +308,23 @@ Key features:
 - More parameter-efficient than traditional Transformers
 - Inverted attention mechanism
 
+### PatchTST
+
+PatchTST uses channel-independent patching for efficient univariate forecasting:
+
+1. **Patching**: Divides the input time series into patches (non-overlapping or overlapping segments)
+2. **Patch Embedding**: Projects each patch to a higher-dimensional embedding space
+3. **Positional Encoding**: Adds position information for each patch
+4. **Transformer Encoder**: Captures dependencies between patches using self-attention
+5. **Projection Head**: Maps the encoded patch representations to the forecast horizon
+
+Key features:
+- Channel independence: Each variable is processed separately (univariate approach)
+- Efficient computation through patching
+- Works with single variable (temperature T only)
+- Uses `create_single_batches()` to load only temperature data
+- Reduces sequence length through patching, making Transformer attention more efficient
+
 ## Data Processing
 
 The data processing pipeline includes:
@@ -292,6 +333,12 @@ The data processing pipeline includes:
 2. **Normalization**: Standardizes features using mean and standard deviation
 3. **Sliding Window**: Creates overlapping sequences with 192 input steps and 96 output steps
 4. **Train/Val/Test Split**: 70% training, 15% validation, 15% test
+
+### Data Loading Strategies
+
+- **Aligned Batches** (`create_aligned_batches`): All variables resampled to 30-min frequency (for Transformer, DLinear, TimesNet, TimeMixer)
+- **Mixed Batches** (`create_mixed_batches`): Preserves original frequencies for different variable groups (for iTransformer)
+- **Single Batches** (`create_single_batches`): Only temperature variable (for PatchTST)
 
 ## Embedding Architecture
 
