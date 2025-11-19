@@ -20,6 +20,7 @@ from timesnet import TimesNet
 from timemixer import TimeMixer
 from itransformer import iTransformer
 from patchtst import PatchTST
+from mixedpatch import MixedPatch
 from data_loader import get_data_loaders, get_mixed_data_loaders, get_single_data_loaders
 
 
@@ -106,6 +107,23 @@ def get_model(args):
             num_layers=args.num_encoder_layers,
             dim_feedforward=args.dim_feedforward,
             dropout=args.dropout
+        )
+    elif args.model_type == 'mixedpatch':
+        # MixedPatch uses mixed frequency batches with patch-based architecture
+        # seq_lens: [T_len, A_len, B_len]
+        seq_lens = [192, 574, 48]  # T(30min), GroupA(10min), GroupB(120min)
+        model = MixedPatch(
+            seq_len=192,
+            pred_len=96,
+            patch_len=args.patch_len,
+            stride=args.stride,
+            d_model=args.d_model,
+            nhead=args.nhead,
+            num_layers=args.num_encoder_layers,
+            dim_feedforward=args.dim_feedforward,
+            dropout=args.dropout,
+            use_mixed_batches=True,
+            seq_lens=seq_lens
         )
     else:
         raise ValueError(f"Unknown model type: {args.model_type}")
@@ -230,8 +248,8 @@ def train(args):
     
     # Load data
     print("Loading data...")
-    if args.model_type == 'itransformer':
-        # Use mixed frequency batches for iTransformer
+    if args.model_type in ['itransformer', 'mixedpatch']:
+        # Use mixed frequency batches for iTransformer and MixedPatch
         train_loader, val_loader, test_loader, norm_params = get_mixed_data_loaders(
             batch_size=args.batch_size,
             history_len=192,
@@ -256,7 +274,7 @@ def train(args):
         )
     
     # Save normalization parameters
-    if args.model_type == 'itransformer':
+    if args.model_type in ['itransformer', 'mixedpatch']:
         norm_params_save = {
             'T_mean': norm_params['T_mean'].tolist(),
             'T_std': norm_params['T_std'].tolist(),

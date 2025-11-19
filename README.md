@@ -1,6 +1,6 @@
 # Time Series Forecasting with Multiple Baseline Models
 
-This repository implements multiple state-of-the-art models for weather time series forecasting, including Transformer, DLinear, TimesNet, TimeMixer, iTransformer, and PatchTST.
+This repository implements multiple state-of-the-art models for weather time series forecasting, including Transformer, DLinear, TimesNet, TimeMixer, iTransformer, PatchTST, and MixedPatch.
 
 ## Task Description
 
@@ -26,12 +26,15 @@ TS/
 ├── timemixer.py                  # TimeMixer model implementation
 ├── itransformer.py               # iTransformer model implementation
 ├── patchtst.py                   # PatchTST model implementation
+├── mixedpatch.py                 # MixedPatch model implementation (NEW)
 ├── data_loader.py               # Data loading and preprocessing
 ├── train.py                     # Training script with MAE/MSE metrics
 ├── evaluate.py                  # Evaluation and visualization script
 ├── test_model.py                # Transformer model unit tests
 ├── test_baselines.py            # Baseline models unit tests
+├── test_mixedpatch.py           # MixedPatch model tests
 ├── test_all_models.sh           # Bash script to test all baseline models
+├── run_all_experiments.sh       # Comprehensive bash script to test all models (NEW)
 ├── requirements.txt             # Python dependencies
 └── README.md                    # This file
 ```
@@ -79,6 +82,24 @@ Channel-independent patching-based Transformer for univariate forecasting.
 - **Features**: Patching mechanism, channel independence, univariate forecasting, positional encoding
 - **Advantages**: Efficient computation through patching, works with single variable (temperature only)
 - **Input**: Only temperature (T) - uses `create_single_batches()` for univariate data
+
+### 7. MixedPatch (NEW)
+Patch-based model for mixed frequency time series forecasting with cross-attention.
+- **Original Architecture**: Designed for handling variables with different sampling frequencies
+- **Parameters**: ~1.3M (default configuration with patch_len=16, stride=8, d_model=128)
+- **Features**:
+  - Patch-based approach: Creates aligned patches from all variables (same number of patches)
+  - Self-attention: Extracts temporal features from each variable separately
+  - Cross-attention: Main variable T as Query, auxiliary variables as Key-Value for information aggregation
+  - Layer normalization and residual connections
+  - Handles mixed frequency data without resampling
+- **Architecture**:
+  1. Variable-specific patch embedding (handles different sequence lengths: T=192, GroupA=574, GroupB=48)
+  2. Self-attention layers for temporal feature extraction
+  3. Cross-attention with T as Q and auxiliary variables as KV
+  4. Linear projection for final temperature prediction
+- **Advantages**: Preserves frequency-specific information, efficient cross-variable aggregation
+- **Input**: Mixed frequency batches - uses `create_mixed_batches()` for multi-frequency data
 
 ## Installation
 
@@ -149,9 +170,23 @@ Train with PatchTST (univariate - temperature only):
 python train.py --model_type patchtst --d_model 128 --nhead 8 --num_encoder_layers 3 --patch_len 16 --stride 8
 ```
 
+Train with MixedPatch (NEW - mixed frequency with patch-based cross-attention):
+```bash
+python train.py --model_type mixedpatch --d_model 128 --nhead 8 --num_encoder_layers 2 --patch_len 16 --stride 8
+```
+
+### Running All Experiments
+
+Run comprehensive tests on all models (including the new MixedPatch):
+```bash
+bash run_all_experiments.sh
+```
+
+This will train and evaluate all 7 models: Transformer, DLinear, TimesNet, TimeMixer, iTransformer, PatchTST, and MixedPatch.
+
 ### Common Arguments
 
-- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`, `itransformer`, `patchtst`) (default: `transformer`)
+- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`, `itransformer`, `patchtst`, `mixedpatch`) (default: `transformer`)
 - `--batch_size`: Batch size (default: 32)
 - `--d_model`: Model dimension (default: 128)
 - `--dropout`: Dropout rate (default: 0.1)
@@ -195,6 +230,13 @@ python train.py --model_type patchtst --d_model 128 --nhead 8 --num_encoder_laye
 - `--patch_len`: Patch length (default: 16)
 - `--stride`: Stride for patching (default: 8)
 
+**MixedPatch:**
+- `--nhead`: Number of attention heads (default: 8)
+- `--num_encoder_layers`: Number of self-attention layers (default: 2)
+- `--dim_feedforward`: Feedforward dimension (default: 512)
+- `--patch_len`: Patch length for main variable T (default: 16)
+- `--stride`: Stride for patching main variable T (default: 8)
+
 ### Examples
 
 ```bash
@@ -212,6 +254,9 @@ python train.py --model_type timesnet --d_model 128 --e_layers 3 --top_k 7
 
 # PatchTST with smaller patches (univariate)
 python train.py --model_type patchtst --patch_len 8 --stride 4 --d_model 64
+
+# MixedPatch with custom configuration (NEW)
+python train.py --model_type mixedpatch --patch_len 12 --stride 6 --d_model 256 --nhead 16
 ```
 
 ### Evaluation
@@ -323,6 +368,34 @@ Key features:
 - Efficient computation through patching
 - Works with single variable (temperature T only)
 - Uses `create_single_batches()` to load only temperature data
+- Reduces sequence length through patching, making Transformer attention more efficient
+
+### MixedPatch (NEW)
+
+MixedPatch is an original architecture designed for mixed frequency time series forecasting:
+
+1. **Variable-Specific Patch Embedding**: Creates patches from variables with different frequencies
+   - Main variable T (30min): 192 timesteps → sliding window patches (patch_len=16, stride=8)
+   - Group A (10min): 574 timesteps → aligned patches (same number as T)
+   - Group B (120min): 48 timesteps → aligned patches (same number as T)
+2. **Positional Encoding**: Adds position information to all patches
+3. **Self-Attention Layers**: Extracts temporal features from each variable group separately
+   - T self-attention: Captures temporal patterns in main variable
+   - Auxiliary self-attention: Captures temporal patterns in Group A and B variables
+4. **Cross-Attention**: Aggregates information across variables
+   - Query: Main variable T features
+   - Key-Value: All auxiliary variable features (Group A + Group B)
+5. **Residual Connections & Layer Normalization**: Stabilizes training
+6. **Feedforward Network**: Additional non-linear transformation
+7. **Projection Head**: Maps patch representations to prediction length
+
+Key features:
+- Handles mixed frequency data without resampling
+- Preserves frequency-specific information for each variable group
+- Cross-attention allows main variable to selectively attend to auxiliary variables
+- Patch-based approach reduces computational complexity
+- Uses `create_mixed_batches()` for multi-frequency data
+- Self-attention for temporal feature extraction + Cross-attention for cross-variable aggregation
 - Reduces sequence length through patching, making Transformer attention more efficient
 
 ## Data Processing
