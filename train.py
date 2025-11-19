@@ -21,6 +21,8 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     """Train for one epoch."""
     model.train()
     total_loss = 0
+    total_mae = 0
+    total_mse = 0
     
     for X_batch, y_batch in tqdm(train_loader, desc="Training", leave=False):
         X_batch = X_batch.to(device)
@@ -39,6 +41,13 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         # Calculate loss
         loss = criterion(output, y_batch)
         
+        # Calculate metrics
+        with torch.no_grad():
+            mse = torch.mean((output - y_batch) ** 2).item()
+            mae = torch.mean(torch.abs(output - y_batch)).item()
+            total_mse += mse
+            total_mae += mae
+        
         # Backward pass
         loss.backward()
         
@@ -49,13 +58,19 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         
         total_loss += loss.item()
     
-    return total_loss / len(train_loader)
+    avg_loss = total_loss / len(train_loader)
+    avg_mse = total_mse / len(train_loader)
+    avg_mae = total_mae / len(train_loader)
+    
+    return avg_loss, avg_mse, avg_mae
 
 
 def validate(model, val_loader, criterion, device):
     """Validate the model."""
     model.eval()
     total_loss = 0
+    total_mae = 0
+    total_mse = 0
     
     with torch.no_grad():
         for X_batch, y_batch in tqdm(val_loader, desc="Validation", leave=False):
@@ -68,8 +83,18 @@ def validate(model, val_loader, criterion, device):
             # Calculate loss
             loss = criterion(output, y_batch)
             total_loss += loss.item()
+            
+            # Calculate metrics
+            mse = torch.mean((output - y_batch) ** 2).item()
+            mae = torch.mean(torch.abs(output - y_batch)).item()
+            total_mse += mse
+            total_mae += mae
     
-    return total_loss / len(val_loader)
+    avg_loss = total_loss / len(val_loader)
+    avg_mse = total_mse / len(val_loader)
+    avg_mae = total_mae / len(val_loader)
+    
+    return avg_loss, avg_mse, avg_mae
 
 
 def train(args):
@@ -138,10 +163,10 @@ def train(args):
         start_time = time.time()
         
         # Train
-        train_loss = train_epoch(model, train_loader, criterion, optimizer, device)
+        train_loss, train_mse, train_mae = train_epoch(model, train_loader, criterion, optimizer, device)
         
         # Validate
-        val_loss = validate(model, val_loader, criterion, device)
+        val_loss, val_mse, val_mae = validate(model, val_loader, criterion, device)
         
         # Update learning rate
         scheduler.step(val_loss)
@@ -149,6 +174,10 @@ def train(args):
         # Log metrics
         writer.add_scalar('Loss/train', train_loss, epoch)
         writer.add_scalar('Loss/val', val_loss, epoch)
+        writer.add_scalar('MSE/train', train_mse, epoch)
+        writer.add_scalar('MSE/val', val_mse, epoch)
+        writer.add_scalar('MAE/train', train_mae, epoch)
+        writer.add_scalar('MAE/val', val_mae, epoch)
         writer.add_scalar('LR', optimizer.param_groups[0]['lr'], epoch)
         
         epoch_time = time.time() - start_time
@@ -156,6 +185,10 @@ def train(args):
         print(f"Epoch {epoch+1}/{args.epochs} | "
               f"Train Loss: {train_loss:.6f} | "
               f"Val Loss: {val_loss:.6f} | "
+              f"Train MSE: {train_mse:.6f} | "
+              f"Val MSE: {val_mse:.6f} | "
+              f"Train MAE: {train_mae:.6f} | "
+              f"Val MAE: {val_mae:.6f} | "
               f"Time: {epoch_time:.2f}s")
         
         # Save best model
@@ -169,9 +202,13 @@ def train(args):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_loss': val_loss,
                 'train_loss': train_loss,
+                'val_mse': val_mse,
+                'val_mae': val_mae,
+                'train_mse': train_mse,
+                'train_mae': train_mae,
             }
             torch.save(checkpoint, os.path.join(args.output_dir, 'best_model.pth'))
-            print(f"  → Saved best model (val_loss: {val_loss:.6f})")
+            print(f"  → Saved best model (val_loss: {val_loss:.6f}, val_mse: {val_mse:.6f}, val_mae: {val_mae:.6f})")
         else:
             patience_counter += 1
         
@@ -188,6 +225,10 @@ def train(args):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_loss': val_loss,
                 'train_loss': train_loss,
+                'val_mse': val_mse,
+                'val_mae': val_mae,
+                'train_mse': train_mse,
+                'train_mae': train_mae,
             }
             torch.save(checkpoint, os.path.join(args.output_dir, f'checkpoint_epoch_{epoch+1}.pth'))
     
@@ -195,13 +236,17 @@ def train(args):
     print("\nEvaluating on test set...")
     checkpoint = torch.load(os.path.join(args.output_dir, 'best_model.pth'))
     model.load_state_dict(checkpoint['model_state_dict'])
-    test_loss = validate(model, test_loader, criterion, device)
+    test_loss, test_mse, test_mae = validate(model, test_loader, criterion, device)
     print(f"Test Loss: {test_loss:.6f}")
+    print(f"Test MSE: {test_mse:.6f}")
+    print(f"Test MAE: {test_mae:.6f}")
     
     # Save test results
     with open(os.path.join(args.output_dir, 'results.txt'), 'w') as f:
         f.write(f"Best validation loss: {best_val_loss:.6f}\n")
         f.write(f"Test loss: {test_loss:.6f}\n")
+        f.write(f"Test MSE: {test_mse:.6f}\n")
+        f.write(f"Test MAE: {test_mae:.6f}\n")
     
     writer.close()
     print(f"\nTraining completed! Results saved to {args.output_dir}")
