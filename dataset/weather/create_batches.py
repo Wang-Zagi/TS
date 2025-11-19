@@ -12,6 +12,58 @@ GROUP_A_FILE = 'GroupA_10min.csv'
 GROUP_B_FILE = 'GroupB_120min.csv'
 
 
+def create_single_batches(
+        history_len: int = 192,  # 历史输入长度 (基于 T 30min 频率)
+        future_len: int = 96,  # 未来目标长度 (基于 T 30min 频率)
+        step_size: int = 96  # 窗口滑动步长 (默认无重叠)
+) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+    """
+    读取 T (degC) 单一变量数据，并构造 Seq2Seq 格式的批次。
+
+    - X (历史输入): T (degC) 的 192 步历史数据。
+    - Y (未来目标): T (degC) 的 96 步未来数据。
+
+    生成器返回:
+        (X_history_array, Y_future_target)
+        X_history_array.shape: (history_len, 1)
+        Y_future_target.shape: (future_len, 1)
+    """
+    try:
+        # 1. 读取数据并确保 DatetimeIndex
+        df_t = pd.read_csv(T_DEGC_FILE, index_col=0, parse_dates=True)[['T (degC)']]
+    except FileNotFoundError:
+        print(f"错误: 无法找到文件。请确保 {T_DEGC_FILE} 文件存在。")
+        return
+
+    # --- 2. 批次构造逻辑 ---
+
+    TOTAL_WINDOW = history_len + future_len
+    n_total = len(df_t)
+
+    if n_total < TOTAL_WINDOW:
+        print(f"数据总长度 ({n_total}) 小于所需窗口长度 ({TOTAL_WINDOW})。无法生成批次。")
+        return
+
+    for i in range(0, n_total - TOTAL_WINDOW + 1, step_size):
+
+        # --- 构造历史输入 (X) ---
+        history_batch = df_t.iloc[i: i + history_len].values
+
+        # --- 构造未来目标 (Y) ---
+        future_start = i + history_len
+
+        target_batch = df_t.iloc[future_start: future_start + future_len].values
+
+        # --- 3. 验证并生成批次 ---
+        if history_batch.shape[0] == history_len and target_batch.shape[0] == future_len:
+            yield (history_batch, target_batch)
+        else:
+            # 只有在数据结尾出现不完整窗口时才触发
+            print(f"Warning: Skipping incomplete batch starting at index {i}.")
+            continue
+
+
+
 def create_mixed_batches(
         history_len: int = 192,  # T (30min) 历史窗口长度
         future_len: int = 96,  # T (30min) 未来目标长度
