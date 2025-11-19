@@ -417,7 +417,7 @@ def main():
     
     # Model selection
     parser.add_argument('--model_type', type=str, default='transformer', 
-                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer', 'itransformer', 'patchtst'],
+                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer', 'itransformer', 'patchtst', 'mixedpatch'],
                         help='Model type to use')
     
     # Data parameters
