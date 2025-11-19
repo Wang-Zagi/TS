@@ -7,30 +7,7 @@ Output: 96 timesteps × 1 feature (T temperature)
 import torch
 import torch.nn as nn
 import math
-
-
-class PositionalEncoding(nn.Module):
-    """Positional encoding for Transformer."""
-    
-    def __init__(self, d_model: int, max_len: int = 5000, dropout: float = 0.1):
-        super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
-        
-        # Create positional encoding matrix
-        position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
-        pe = torch.zeros(max_len, 1, d_model)
-        pe[:, 0, 0::2] = torch.sin(position * div_term)
-        pe[:, 0, 1::2] = torch.cos(position * div_term)
-        self.register_buffer('pe', pe)
-    
-    def forward(self, x):
-        """
-        Args:
-            x: Tensor of shape (seq_len, batch_size, d_model)
-        """
-        x = x + self.pe[:x.size(0)]
-        return self.dropout(x)
+from embed import DataEmbedding
 
 
 class TransformerTS(nn.Module):
@@ -38,10 +15,11 @@ class TransformerTS(nn.Module):
     Transformer for time series forecasting.
     
     Architecture:
-    - Input projection: maps input features to d_model dimension
-    - Positional encoding
+    - DataEmbedding: maps input features to d_model dimension with token, positional, and temporal embeddings
     - Transformer encoder-decoder
     - Output projection: maps d_model to output feature dimension
+    
+    The number of encoder and decoder layers can be controlled via num_encoder_layers and num_decoder_layers.
     """
     
     def __init__(
@@ -54,6 +32,8 @@ class TransformerTS(nn.Module):
         num_decoder_layers: int = 3,
         dim_feedforward: int = 512,
         dropout: float = 0.1,
+        embed_type: str = 'fixed',
+        freq: str = 'h',
         max_len: int = 512
     ):
         super().__init__()
@@ -62,14 +42,23 @@ class TransformerTS(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         
-        # Input projection
-        self.input_projection = nn.Linear(input_dim, d_model)
+        # Data embedding for encoder input
+        self.enc_embedding = DataEmbedding(
+            c_in=input_dim,
+            d_model=d_model,
+            embed_type=embed_type,
+            freq=freq,
+            dropout=dropout
+        )
         
-        # Output projection (for decoder input)
-        self.output_projection = nn.Linear(output_dim, d_model)
-        
-        # Positional encoding
-        self.pos_encoder = PositionalEncoding(d_model, max_len, dropout)
+        # Data embedding for decoder input
+        self.dec_embedding = DataEmbedding(
+            c_in=output_dim,
+            d_model=d_model,
+            embed_type=embed_type,
+            freq=freq,
+            dropout=dropout
+        )
         
         # Transformer
         self.transformer = nn.Transformer(
@@ -79,7 +68,7 @@ class TransformerTS(nn.Module):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            batch_first=False  # We use (seq_len, batch, features) format
+            batch_first=True  # Using batch_first for better performance
         )
         
         # Final output layer
@@ -99,29 +88,23 @@ class TransformerTS(nn.Module):
         mask = mask.masked_fill(mask == 1, float('-inf'))
         return mask
     
-    def forward(self, src, tgt):
+    def forward(self, src, tgt, src_mark=None, tgt_mark=None):
         """
         Args:
             src: Input sequence (batch_size, src_seq_len, input_dim)
             tgt: Target sequence (batch_size, tgt_seq_len, output_dim)
+            src_mark: Time features for source (batch_size, src_seq_len, n_features) - optional
+            tgt_mark: Time features for target (batch_size, tgt_seq_len, n_features) - optional
         
         Returns:
             Output sequence (batch_size, tgt_seq_len, output_dim)
         """
-        # Convert to (seq_len, batch, features) format
-        src = src.transpose(0, 1)  # (src_seq_len, batch_size, input_dim)
-        tgt = tgt.transpose(0, 1)  # (tgt_seq_len, batch_size, output_dim)
-        
-        # Project inputs to d_model dimension
-        src = self.input_projection(src) * math.sqrt(self.d_model)
-        tgt = self.output_projection(tgt) * math.sqrt(self.d_model)
-        
-        # Add positional encoding
-        src = self.pos_encoder(src)
-        tgt = self.pos_encoder(tgt)
+        # Apply data embeddings
+        src = self.enc_embedding(src, src_mark)
+        tgt = self.dec_embedding(tgt, tgt_mark)
         
         # Generate target mask (causal)
-        tgt_mask = self.generate_square_subsequent_mask(tgt.size(0)).to(tgt.device)
+        tgt_mask = self.generate_square_subsequent_mask(tgt.size(1)).to(tgt.device)
         
         # Transformer forward pass
         output = self.transformer(
@@ -132,9 +115,6 @@ class TransformerTS(nn.Module):
         
         # Project to output dimension
         output = self.output_linear(output)
-        
-        # Convert back to (batch, seq_len, features) format
-        output = output.transpose(0, 1)
         
         return output
     
