@@ -24,11 +24,13 @@ TS/
 ├── dlinear.py                    # DLinear model implementation
 ├── timesnet.py                   # TimesNet model implementation
 ├── timemixer.py                  # TimeMixer model implementation
+├── itransformer.py               # iTransformer model implementation
 ├── data_loader.py               # Data loading and preprocessing
 ├── train.py                     # Training script with MAE/MSE metrics
 ├── evaluate.py                  # Evaluation and visualization script
 ├── test_model.py                # Transformer model unit tests
 ├── test_baselines.py            # Baseline models unit tests
+├── test_all_models.sh           # Bash script to test all baseline models
 ├── requirements.txt             # Python dependencies
 └── README.md                    # This file
 ```
@@ -62,6 +64,13 @@ Multi-scale mixing with decomposable mixing in both past and future.
 - **Features**: Multi-scale decomposition, temporal and feature mixing
 - **Advantages**: Efficient multi-scale modeling
 
+### 5. iTransformer
+Inverted Transformer that treats variables as tokens instead of time steps.
+- **Paper**: iTransformer: Inverted Transformers Are Effective for Time Series Forecasting (ICLR 2024)
+- **Parameters**: ~366K (default configuration)
+- **Features**: Variable-wise attention, individual variable embeddings, captures inter-variable dependencies
+- **Advantages**: Better multivariate modeling, handles different variable frequencies
+
 ## Installation
 
 1. Install dependencies:
@@ -90,6 +99,13 @@ python quick_start_baselines.py
 
 This will verify all models are working correctly and show their parameter counts.
 
+Run comprehensive tests on all baseline models:
+```bash
+bash test_all_models.sh
+```
+
+This will train and evaluate iTransformer, TimeMixer, DLinear, and TimesNet with reasonable configurations.
+
 ## Usage
 
 ### Training
@@ -114,15 +130,21 @@ Train with TimeMixer:
 python train.py --model_type timemixer --d_model 64 --d_ff 128 --e_layers 2
 ```
 
+Train with iTransformer:
+```bash
+python train.py --model_type itransformer --d_model 128 --nhead 8 --num_encoder_layers 3
+```
+
 ### Common Arguments
 
-- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`) (default: `transformer`)
+- `--model_type`: Model to use (`transformer`, `dlinear`, `timesnet`, `timemixer`, `itransformer`) (default: `transformer`)
 - `--batch_size`: Batch size (default: 32)
 - `--d_model`: Model dimension (default: 128)
 - `--dropout`: Dropout rate (default: 0.1)
 - `--epochs`: Number of training epochs (default: 100)
 - `--lr`: Learning rate (default: 0.0001)
 - `--patience`: Early stopping patience (default: 15)
+- `--use_early_stopping`: Enable early stopping (flag)
 - `--output_dir`: Output directory for checkpoints (default: ./checkpoints)
 
 ### Model-Specific Arguments
@@ -131,6 +153,11 @@ python train.py --model_type timemixer --d_model 64 --d_ff 128 --e_layers 2
 - `--nhead`: Number of attention heads (default: 8)
 - `--num_encoder_layers`: Number of encoder layers (default: 3)
 - `--num_decoder_layers`: Number of decoder layers (default: 3)
+- `--dim_feedforward`: Feedforward dimension (default: 512)
+
+**iTransformer:**
+- `--nhead`: Number of attention heads (default: 8)
+- `--num_encoder_layers`: Number of encoder layers (default: 3)
 - `--dim_feedforward`: Feedforward dimension (default: 512)
 
 **DLinear:**
@@ -241,6 +268,21 @@ Key features:
 - Efficient multi-scale modeling
 - Both temporal and feature mixing
 - Decomposition at multiple scales
+
+### iTransformer
+
+iTransformer inverts the traditional Transformer architecture for time series:
+
+1. **Variable Embedding**: Each variable gets its own embedding layer to handle different frequencies
+2. **Variable-as-Token**: Treats each variable's entire time series as a single token
+3. **Attention Across Variables**: Transformer attention operates across variables instead of time steps
+4. **Individual Projection**: Projects each variable representation to prediction length
+
+Key features:
+- Better captures inter-variable dependencies
+- Handles variables with different frequency characteristics
+- More parameter-efficient than traditional Transformers
+- Inverted attention mechanism
 
 ## Data Processing
 

@@ -1,6 +1,6 @@
 """
 Training script for time series forecasting.
-Supports multiple baseline models: Transformer, DLinear, TimesNet, TimeMixer.
+Supports multiple baseline models: Transformer, DLinear, TimesNet, TimeMixer, iTransformer.
 Trains a model to predict 96 timesteps from 192 timesteps of input.
 """
 
@@ -18,6 +18,7 @@ from model import TransformerTS
 from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
+from itransformer import iTransformer
 from data_loader import get_data_loaders
 
 
@@ -73,6 +74,18 @@ def get_model(args):
             d_model=args.d_model,
             d_ff=args.d_ff,
             e_layers=args.e_layers,
+            dropout=args.dropout
+        )
+    elif args.model_type == 'itransformer':
+        model = iTransformer(
+            seq_len=192,
+            pred_len=96,
+            input_dim=21,
+            output_dim=1,
+            d_model=args.d_model,
+            nhead=args.nhead,
+            num_layers=args.num_encoder_layers,
+            dim_feedforward=args.dim_feedforward,
             dropout=args.dropout
         )
     else:
@@ -270,8 +283,8 @@ def train(args):
         else:
             patience_counter += 1
         
-        # Early stopping
-        if patience_counter >= args.patience:
+        # Early stopping (if enabled)
+        if args.use_early_stopping and patience_counter >= args.patience:
             print(f"\nEarly stopping triggered after {epoch+1} epochs")
             break
         
@@ -315,7 +328,7 @@ def main():
     
     # Model selection
     parser.add_argument('--model_type', type=str, default='transformer', 
-                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer'],
+                        choices=['transformer', 'dlinear', 'timesnet', 'timemixer', 'itransformer'],
                         help='Model type to use')
     
     # Data parameters
@@ -326,10 +339,10 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.1, help='Dropout rate')
     
     # Transformer-specific parameters
-    parser.add_argument('--nhead', type=int, default=8, help='Number of attention heads (Transformer)')
-    parser.add_argument('--num_encoder_layers', type=int, default=3, help='Number of encoder layers (Transformer)')
+    parser.add_argument('--nhead', type=int, default=8, help='Number of attention heads (Transformer, iTransformer)')
+    parser.add_argument('--num_encoder_layers', type=int, default=3, help='Number of encoder layers (Transformer, iTransformer)')
     parser.add_argument('--num_decoder_layers', type=int, default=3, help='Number of decoder layers (Transformer)')
-    parser.add_argument('--dim_feedforward', type=int, default=512, help='Feedforward dimension (Transformer)')
+    parser.add_argument('--dim_feedforward', type=int, default=512, help='Feedforward dimension (Transformer, iTransformer)')
     
     # DLinear-specific parameters
     parser.add_argument('--kernel_size', type=int, default=25, help='Kernel size for moving average (DLinear)')
@@ -345,6 +358,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience')
+    parser.add_argument('--use_early_stopping', action='store_true', help='Enable early stopping')
     parser.add_argument('--save_every', type=int, default=10, help='Save checkpoint every N epochs')
     
     # Output

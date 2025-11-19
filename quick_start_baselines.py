@@ -8,6 +8,7 @@ from model import TransformerTS
 from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
+from itransformer import iTransformer
 
 
 def quick_test_all_models():
@@ -69,6 +70,17 @@ def quick_test_all_models():
             d_model=32,
             d_ff=64,
             e_layers=2,
+            dropout=0.1
+        ),
+        'iTransformer': iTransformer(
+            seq_len=seq_len,
+            pred_len=pred_len,
+            input_dim=input_dim,
+            output_dim=output_dim,
+            d_model=64,
+            nhead=4,
+            num_layers=2,
+            dim_feedforward=256,
             dropout=0.1
         ),
     }
