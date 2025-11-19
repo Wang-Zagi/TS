@@ -7,7 +7,7 @@ filename_10min = 'GroupA_10min.csv'
 filename_120min = 'GroupB_120min.csv'
 
 # 定义文件路径，假设文件存在于当前工作目录下
-T_DEGC_FILE = 'T_degC_30min.csv'
+T_DEGC_FILE = 'T_30min.csv'
 GROUP_A_FILE = 'GroupA_10min.csv'
 GROUP_B_FILE = 'GroupB_120min.csv'
 
