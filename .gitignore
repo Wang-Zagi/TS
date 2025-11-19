@@ -2,3 +2,20 @@
 /vene
 /.idea
 /__pycache__
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated data files
+dataset/weather/T_30min.csv
+dataset/weather/GroupA_10min.csv
+dataset/weather/GroupB_120min.csv
+
+# Model checkpoints
+checkpoints/
+*.pth
+*.pt
+
+# Logs
+logs/
+*.log
