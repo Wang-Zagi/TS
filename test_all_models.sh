@@ -314,6 +314,37 @@ echo "   - Handles variables with different sampling rates"
 echo "   - Uses mixed batches like iTransformer"
 echo "   - Expected to perform well on multi-frequency time series"
 echo ""
-echo "========================================================================="
 echo "All model checkpoints and results are saved in ./checkpoints_complete/"
+echo "========================================================================="
+
+# =============================================================================
+# Evaluation: Generate comparison plots for all models
+# =============================================================================
+echo ""
+echo "========================================================================="
+echo "Generating Comparison Plots with Denormalized Data"
+echo "========================================================================="
+echo ""
+echo "Running evaluation script to generate:"
+echo "  1. MAE and MSE metrics for all models"
+echo "  2. Line plots comparing predictions vs actual data (denormalized)"
+echo "  3. Individual plots for each model"
+echo "  4. Combined comparison plot for all models"
+echo ""
+
+python evaluate_all_models.py \
+    --checkpoints_dir ./checkpoints_complete \
+    --output_dir ./evaluation_results \
+    --num_samples 3 \
+    --batch_size 32
+
+echo ""
+echo "========================================================================="
+echo "Evaluation Complete!"
+echo "========================================================================="
+echo ""
+echo "Check the following directory for results:"
+echo "  - Plots: ./evaluation_results/"
+echo "  - Metrics: ./evaluation_results/metrics_summary.json"
+echo ""
 echo "========================================================================="
