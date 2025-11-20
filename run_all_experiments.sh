@@ -119,9 +119,9 @@ python train.py \
     --model_type timesnet \
     --d_model 128 \
     --d_ff 256 \
-    --e_layers 3 \
+    --e_layers 2 \
     --top_k 5 \
-    --num_kernels 6 \
+    --num_kernels 5 \
     --dropout 0.1 \
     --batch_size ${BATCH_SIZE} \
     --epochs ${EPOCHS} \

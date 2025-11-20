@@ -14,7 +14,6 @@ import argparse
 from tqdm import tqdm
 import json
 
-from model import TransformerTS
 from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
@@ -34,18 +33,7 @@ def get_model(args):
     Returns:
         Model instance
     """
-    if args.model_type == 'transformer':
-        model = TransformerTS(
-            input_dim=21,
-            output_dim=1,
-            d_model=args.d_model,
-            nhead=args.nhead,
-            num_encoder_layers=args.num_encoder_layers,
-            num_decoder_layers=args.num_decoder_layers,
-            dim_feedforward=args.dim_feedforward,
-            dropout=args.dropout
-        )
-    elif args.model_type == 'dlinear':
+    if args.model_type == 'dlinear':
         model = DLinear(
             seq_len=192,
             pred_len=96,
@@ -343,8 +331,6 @@ def train(args):
         epoch_time = time.time() - start_time
         
         print(f"Epoch {epoch+1}/{args.epochs} | "
-              f"Train Loss: {train_loss:.6f} | "
-              f"Val Loss: {val_loss:.6f} | "
               f"Train MSE: {train_mse:.6f} | "
               f"Val MSE: {val_mse:.6f} | "
               f"Train MAE: {train_mae:.6f} | "
@@ -414,51 +400,51 @@ def train(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Train time series forecasting models')
-    
+
     # Model selection
-    parser.add_argument('--model_type', type=str, default='transformer', 
+    parser.add_argument('--model_type', type=str, default='transformer',
                         choices=['transformer', 'dlinear', 'timesnet', 'timemixer', 'itransformer', 'patchtst', 'mixedpatch'],
                         help='Model type to use')
-    
+
     # Data parameters
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    
+
     # Common model parameters
     parser.add_argument('--d_model', type=int, default=128, help='Model dimension')
     parser.add_argument('--dropout', type=float, default=0.1, help='Dropout rate')
-    
+
     # Transformer-specific parameters
     parser.add_argument('--nhead', type=int, default=8, help='Number of attention heads (Transformer, iTransformer)')
     parser.add_argument('--num_encoder_layers', type=int, default=3, help='Number of encoder layers (Transformer, iTransformer)')
     parser.add_argument('--num_decoder_layers', type=int, default=3, help='Number of decoder layers (Transformer)')
     parser.add_argument('--dim_feedforward', type=int, default=512, help='Feedforward dimension (Transformer, iTransformer)')
-    
+
     # DLinear-specific parameters
     parser.add_argument('--kernel_size', type=int, default=25, help='Kernel size for moving average (DLinear)')
     parser.add_argument('--individual', action='store_true', help='Use individual linear layers (DLinear)')
-    
+
     # TimesNet-specific parameters
     parser.add_argument('--d_ff', type=int, default=128, help='FFN dimension (TimesNet, TimeMixer)')
     parser.add_argument('--num_kernels', type=int, default=6, help='Number of kernels in Inception block (TimesNet)')
     parser.add_argument('--top_k', type=int, default=5, help='Number of top periods (TimesNet)')
     parser.add_argument('--e_layers', type=int, default=2, help='Number of encoder layers (TimesNet, TimeMixer)')
-    
+
     # PatchTST-specific parameters
     parser.add_argument('--patch_len', type=int, default=16, help='Patch length (PatchTST)')
     parser.add_argument('--stride', type=int, default=8, help='Stride for patching (PatchTST)')
-    
+
     # Training parameters
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=15, help='Early stopping patience')
     parser.add_argument('--use_early_stopping', action='store_true', help='Enable early stopping')
     parser.add_argument('--save_every', type=int, default=10, help='Save checkpoint every N epochs')
-    
+
     # Output
     parser.add_argument('--output_dir', type=str, default='./checkpoints', help='Output directory')
-    
+
     args = parser.parse_args()
-    
+
     train(args)
 
 

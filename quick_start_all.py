@@ -7,7 +7,6 @@ Verifies that all models can be created and shows their parameter counts.
 import torch
 import sys
 
-from model import TransformerTS
 from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
@@ -40,22 +39,7 @@ def main():
     print()
     
     all_passed = True
-    
-    # Test Transformer
-    all_passed &= test_model_creation(
-        "Transformer",
-        lambda: TransformerTS(
-            input_dim=21,
-            output_dim=1,
-            d_model=128,
-            nhead=8,
-            num_encoder_layers=3,
-            num_decoder_layers=3,
-            dim_feedforward=512,
-            dropout=0.1
-        )
-    )
-    
+
     # Test DLinear
     all_passed &= test_model_creation(
         "DLinear",

@@ -4,7 +4,6 @@ This script demonstrates how to quickly test each model.
 """
 
 import torch
-from model import TransformerTS
 from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
@@ -35,16 +34,6 @@ def quick_test_all_models():
     print(f"Expected output shape: ({batch_size}, {pred_len}, {output_dim})")
     
     models = {
-        'Transformer': TransformerTS(
-            input_dim=input_dim,
-            output_dim=output_dim,
-            d_model=64,
-            nhead=4,
-            num_encoder_layers=2,
-            num_decoder_layers=2,
-            dim_feedforward=256,
-            dropout=0.1
-        ),
         'DLinear': DLinear(
             seq_len=seq_len,
             pred_len=pred_len,

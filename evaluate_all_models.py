@@ -11,7 +11,6 @@ import json
 import os
 from pathlib import Path
 
-from model import TransformerTS
 from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
@@ -54,18 +53,7 @@ def load_model_and_params(model_dir, model_type, device):
         state_dict = checkpoint['model_state_dict']
         
         # Infer model architecture from state dict
-        if model_type == 'transformer':
-            model = TransformerTS(
-                input_dim=21,
-                output_dim=1,
-                d_model=128,
-                nhead=8,
-                num_encoder_layers=3,
-                num_decoder_layers=3,
-                dim_feedforward=512,
-                dropout=0.1
-            )
-        elif model_type == 'dlinear':
+        if model_type == 'dlinear':
             model = DLinear(
                 seq_len=192,
                 pred_len=96,
