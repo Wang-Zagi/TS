@@ -15,9 +15,14 @@ dataset/weather/GroupB_120min.csv
 checkpoints/
 checkpoints_test/
 checkpoints_all/
+checkpoints_complete/
 test_output/
 *.pth
 *.pt
+
+# Evaluation results
+evaluation_test/
+evaluation_results/
 
 # Logs
 logs/
