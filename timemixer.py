@@ -92,13 +92,13 @@ class MultiScaleSeasonMixing(nn.Module):
     Bottom-up mixing season pattern (high frequency -> low frequency).
     This performs channel mixing across different scales.
     """
-    def __init__(self, d_model, d_ff, num_scales=3, dropout=0.1):
+    def __init__(self, seq_len, d_model, d_ff, num_scales=3, dropout=0.1):
         super().__init__()
         self.num_scales = num_scales
         
         # Channel mixing for each scale
         self.channel_mixing = nn.ModuleList([
-            ChannelMixing(192, d_model, d_ff, dropout)  # Simplified: use same seq_len
+            ChannelMixing(seq_len, d_model, d_ff, dropout)  # Simplified: use same seq_len
             for _ in range(num_scales)
         ])
     
@@ -127,13 +127,13 @@ class MultiScaleTrendMixing(nn.Module):
     Top-down mixing trend pattern (low frequency -> high frequency).
     This performs channel mixing across different scales.
     """
-    def __init__(self, d_model, d_ff, num_scales=3, dropout=0.1):
+    def __init__(self, seq_len, d_model, d_ff, num_scales=3, dropout=0.1):
         super().__init__()
         self.num_scales = num_scales
         
         # Channel mixing for each scale
         self.channel_mixing = nn.ModuleList([
-            ChannelMixing(192, d_model, d_ff, dropout)  # Simplified: use same seq_len
+            ChannelMixing(seq_len, d_model, d_ff, dropout)  # Simplified: use same seq_len
             for _ in range(num_scales)
         ])
     
@@ -180,12 +180,12 @@ class PastDecomposableMixing(nn.Module):
         
         # Multi-scale season mixing (bottom-up) with channel mixing
         self.mixing_multi_scale_season = MultiScaleSeasonMixing(
-            d_model, d_ff, num_scales=self.num_scales, dropout=dropout
+            seq_len, d_model, d_ff, num_scales=self.num_scales, dropout=dropout
         )
         
         # Multi-scale trend mixing (top-down) with channel mixing
         self.mixing_multi_scale_trend = MultiScaleTrendMixing(
-            d_model, d_ff, num_scales=self.num_scales, dropout=dropout
+            seq_len, d_model, d_ff, num_scales=self.num_scales, dropout=dropout
         )
         
         self.layer_norm = nn.LayerNorm(d_model)

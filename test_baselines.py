@@ -159,7 +159,7 @@ def test_patchtst():
     
     # Test forward pass with univariate input
     batch_size = 4
-    src = torch.randn(batch_size, 192, 1)  # Univariate input (temperature only)
+    src = torch.randn(batch_size, 96, 1)  # Univariate input (temperature only)
     
     output = model(src)
     assert output.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output.shape}"
@@ -171,7 +171,7 @@ def test_patchtst():
     print(f"✓ Predict method successful. Output shape: {predictions.shape}")
     
     # Test with 2D input (batch_size, seq_len)
-    src_2d = torch.randn(batch_size, 192)
+    src_2d = torch.randn(batch_size, 96)
     output_2d = model(src_2d)
     assert output_2d.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output_2d.shape}"
     print(f"✓ 2D input handling successful. Output shape: {output_2d.shape}")
@@ -208,7 +208,7 @@ def test_all_models_comparison():
     
     batch_size = 4
     src = torch.randn(batch_size, 96, 21)
-    src_univariate = torch.randn(batch_size, 192, 1)  # For PatchTST
+    src_univariate = torch.randn(batch_size, 96, 1)  # For PatchTST
     
     models = {
         'DLinear': DLinear(seq_len=96, pred_len=96, input_dim=21, output_dim=1),

@@ -18,7 +18,7 @@ def test_mixedpatch_creation():
     print("Testing MixedPatch model creation...")
     
     model = MixedPatch(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         patch_len=16,
         stride=8,
@@ -43,7 +43,7 @@ def test_mixedpatch_forward_dict():
     print("\nTesting MixedPatch forward pass with dict input...")
     
     model = MixedPatch(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         patch_len=16,
         stride=8,
@@ -60,7 +60,7 @@ def test_mixedpatch_forward_dict():
     
     # Create mixed batch input
     X_dict = {
-        'T_30min_hist': torch.randn(batch_size, 192, 1),
+        'T_30min_hist': torch.randn(batch_size, 96, 1),
         'A_10min_hist': torch.randn(batch_size, 286, 10),
         'B_120min_hist': torch.randn(batch_size, 24, 10)
     }
@@ -87,7 +87,7 @@ def test_mixedpatch_training_step():
     print("\nTesting MixedPatch training step...")
     
     model = MixedPatch(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         patch_len=16,
         stride=8,
@@ -104,7 +104,7 @@ def test_mixedpatch_training_step():
     
     # Create mixed batch input
     X_dict = {
-        'T_30min_hist': torch.randn(batch_size, 192, 1),
+        'T_30min_hist': torch.randn(batch_size, 96, 1),
         'A_10min_hist': torch.randn(batch_size, 286, 10),
         'B_120min_hist': torch.randn(batch_size, 24, 10)
     }
