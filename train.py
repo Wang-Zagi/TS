@@ -1,7 +1,7 @@
 """
 Training script for time series forecasting.
 Supports multiple baseline models: Transformer, DLinear, TimesNet, TimeMixer, iTransformer.
-Trains a model to predict 96 timesteps from 192 timesteps of input.
+Trains a model to predict 96 timesteps from 96 timesteps of input.
 """
 
 import torch
@@ -35,7 +35,7 @@ def get_model(args):
     """
     if args.model_type == 'dlinear':
         model = DLinear(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -44,7 +44,7 @@ def get_model(args):
         )
     elif args.model_type == 'timesnet':
         model = TimesNet(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -57,7 +57,7 @@ def get_model(args):
         )
     elif args.model_type == 'timemixer':
         model = TimeMixer(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -68,10 +68,10 @@ def get_model(args):
         )
     elif args.model_type == 'itransformer':
         # iTransformer uses mixed batches with different sequence lengths per variable
-        # seq_lens: [192, 574, 574, ..., 48, 48] (1 T, 10 A, 10 B variables)
-        seq_lens = [192] + [574] * 10 + [48] * 10  # T(1) + GroupA(10) + GroupB(10)
+        # seq_lens: [96, 286, 286, ..., 24, 24] (1 T, 10 A, 10 B variables)
+        seq_lens = [96] + [286] * 10 + [24] * 10  # T(1) + GroupA(10) + GroupB(10)
         model = iTransformer(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -86,7 +86,7 @@ def get_model(args):
     elif args.model_type == 'patchtst':
         # PatchTST uses single variable (temperature) input
         model = PatchTST(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             patch_len=args.patch_len,
             stride=args.stride,
@@ -99,9 +99,9 @@ def get_model(args):
     elif args.model_type == 'mixedpatch':
         # MixedPatch uses mixed frequency batches with patch-based architecture
         # seq_lens: [T_len, A_len, B_len]
-        seq_lens = [192, 574, 48]  # T(30min), GroupA(10min), GroupB(120min)
+        seq_lens = [96, 286, 24]  # T(30min), GroupA(10min), GroupB(120min)
         model = MixedPatch(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             patch_len=args.patch_len,
             stride=args.stride,
@@ -240,7 +240,7 @@ def train(args):
         # Use mixed frequency batches for iTransformer and MixedPatch
         train_loader, val_loader, test_loader, norm_params = get_mixed_data_loaders(
             batch_size=args.batch_size,
-            history_len=192,
+            history_len=96,
             future_len=96,
             step_size=96
         )
@@ -248,7 +248,7 @@ def train(args):
         # Use single variable (temperature) batches for PatchTST
         train_loader, val_loader, test_loader, norm_params = get_single_data_loaders(
             batch_size=args.batch_size,
-            history_len=192,
+            history_len=96,
             future_len=96,
             step_size=96
         )
@@ -256,7 +256,7 @@ def train(args):
         # Use aligned batches for other models
         train_loader, val_loader, test_loader, norm_params = get_data_loaders(
             batch_size=args.batch_size,
-            history_len=192,
+            history_len=96,
             future_len=96,
             step_size=96
         )

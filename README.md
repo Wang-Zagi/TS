@@ -4,7 +4,7 @@ This repository implements multiple state-of-the-art models for weather time ser
 
 ## Task Description
 
-- **Input**: 192 timesteps × 21 features
+- **Input**: 96 timesteps × 21 features
   - Main variable: T (temperature in °C)
   - External variables: 20 weather-related features (pressure, humidity, wind, radiation, etc.)
 - **Output**: 96 timesteps × 1 feature (T temperature prediction)
@@ -94,7 +94,7 @@ Patch-based model for mixed frequency time series forecasting with cross-attenti
   - Layer normalization and residual connections
   - Handles mixed frequency data without resampling
 - **Architecture**:
-  1. Variable-specific patch embedding (handles different sequence lengths: T=192, GroupA=574, GroupB=48)
+  1. Variable-specific patch embedding (handles different sequence lengths: T=96, GroupA=286, GroupB=24)
   2. Self-attention layers for temporal feature extraction
   3. Cross-attention with T as Q and auxiliary variables as KV
   4. Linear projection for final temperature prediction
@@ -407,9 +407,9 @@ Key features:
 MixedPatch is an original architecture designed for mixed frequency time series forecasting:
 
 1. **Variable-Specific Patch Embedding**: Creates patches from variables with different frequencies
-   - Main variable T (30min): 192 timesteps → sliding window patches (patch_len=16, stride=8)
-   - Group A (10min): 574 timesteps → aligned patches (same number as T)
-   - Group B (120min): 48 timesteps → aligned patches (same number as T)
+   - Main variable T (30min): 96 timesteps → sliding window patches (patch_len=16, stride=8)
+   - Group A (10min): 286 timesteps → aligned patches (same number as T)
+   - Group B (120min): 24 timesteps → aligned patches (same number as T)
 2. **Positional Encoding**: Adds position information to all patches
 3. **Self-Attention Layers**: Extracts temporal features from each variable group separately
    - T self-attention: Captures temporal patterns in main variable
@@ -436,7 +436,7 @@ The data processing pipeline includes:
 
 1. **Frequency Alignment**: Resamples different frequency data to 30-minute intervals
 2. **Normalization**: Standardizes features using mean and standard deviation
-3. **Sliding Window**: Creates overlapping sequences with 192 input steps and 96 output steps
+3. **Sliding Window**: Creates overlapping sequences with 96 input steps and 96 output steps
 4. **Train/Val/Test Split**: 70% training, 15% validation, 15% test
 
 ### Data Loading Strategies

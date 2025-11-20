@@ -76,7 +76,7 @@ def collate_mixed_batch(batch):
     }, y_batch
 
 
-def load_data(history_len=192, future_len=96, step_size=96, train_ratio=0.7, val_ratio=0.15):
+def load_data(history_len=96, future_len=96, step_size=96, train_ratio=0.7, val_ratio=0.15):
     """
     Load and split data into train, validation, and test sets.
     
@@ -164,7 +164,7 @@ def load_data(history_len=192, future_len=96, step_size=96, train_ratio=0.7, val
     return train_dataset, val_dataset, test_dataset, norm_params
 
 
-def load_mixed_data(history_len=192, future_len=96, step_size=96, train_ratio=0.7, val_ratio=0.15):
+def load_mixed_data(history_len=96, future_len=96, step_size=96, train_ratio=0.7, val_ratio=0.15):
     """
     Load mixed frequency data for iTransformer.
     
@@ -276,7 +276,7 @@ def load_mixed_data(history_len=192, future_len=96, step_size=96, train_ratio=0.
     return train_dataset, val_dataset, test_dataset, norm_params
 
 
-def load_single_data(history_len=192, future_len=96, step_size=96, train_ratio=0.7, val_ratio=0.15):
+def load_single_data(history_len=96, future_len=96, step_size=96, train_ratio=0.7, val_ratio=0.15):
     """
     Load single variable (temperature) data for PatchTST.
     
@@ -364,7 +364,7 @@ def load_single_data(history_len=192, future_len=96, step_size=96, train_ratio=0
     return train_dataset, val_dataset, test_dataset, norm_params
 
 
-def get_data_loaders(batch_size=32, history_len=192, future_len=96, step_size=96, 
+def get_data_loaders(batch_size=32, history_len=96, future_len=96, step_size=96, 
                      train_ratio=0.7, val_ratio=0.15):
     """
     Get data loaders for training, validation, and testing.
@@ -412,7 +412,7 @@ def get_data_loaders(batch_size=32, history_len=192, future_len=96, step_size=96
     return train_loader, val_loader, test_loader, norm_params
 
 
-def get_mixed_data_loaders(batch_size=32, history_len=192, future_len=96, step_size=96,
+def get_mixed_data_loaders(batch_size=32, history_len=96, future_len=96, step_size=96,
                            train_ratio=0.7, val_ratio=0.15):
     """
     Get data loaders for mixed frequency batches (for iTransformer).
@@ -463,7 +463,7 @@ def get_mixed_data_loaders(batch_size=32, history_len=192, future_len=96, step_s
     return train_loader, val_loader, test_loader, norm_params
 
 
-def get_single_data_loaders(batch_size=32, history_len=192, future_len=96, step_size=96,
+def get_single_data_loaders(batch_size=32, history_len=96, future_len=96, step_size=96,
                             train_ratio=0.7, val_ratio=0.15):
     """
     Get data loaders for single variable (temperature) batches (for PatchTST).

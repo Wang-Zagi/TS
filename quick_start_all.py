@@ -44,7 +44,7 @@ def main():
     all_passed &= test_model_creation(
         "DLinear",
         lambda: DLinear(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -57,7 +57,7 @@ def main():
     all_passed &= test_model_creation(
         "TimesNet",
         lambda: TimesNet(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -74,7 +74,7 @@ def main():
     all_passed &= test_model_creation(
         "TimeMixer",
         lambda: TimeMixer(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -86,11 +86,11 @@ def main():
     )
     
     # Test iTransformer
-    seq_lens = [192] + [574] * 10 + [48] * 10
+    seq_lens = [96] + [286] * 10 + [24] * 10
     all_passed &= test_model_creation(
         "iTransformer",
         lambda: iTransformer(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             input_dim=21,
             output_dim=1,
@@ -108,7 +108,7 @@ def main():
     all_passed &= test_model_creation(
         "PatchTST",
         lambda: PatchTST(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             patch_len=16,
             stride=8,
@@ -124,7 +124,7 @@ def main():
     all_passed &= test_model_creation(
         "MixedPatch (NEW)",
         lambda: MixedPatch(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             patch_len=16,
             stride=8,
@@ -134,7 +134,7 @@ def main():
             dim_feedforward=512,
             dropout=0.1,
             use_mixed_batches=True,
-            seq_lens=[192, 574, 48]
+            seq_lens=[96, 286, 24]
         )
     )
     

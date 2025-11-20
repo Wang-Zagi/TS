@@ -84,7 +84,7 @@ class iTransformer(nn.Module):
     - Only predicts temperature (output_dim=1)
     
     Args:
-        seq_len: Input sequence length (e.g., 192)
+        seq_len: Input sequence length (e.g., 96)
         pred_len: Prediction sequence length (e.g., 96)
         input_dim: Number of input features/variables (e.g., 21)
         output_dim: Number of output features (e.g., 1 for temperature only)
@@ -97,7 +97,7 @@ class iTransformer(nn.Module):
     
     def __init__(
         self,
-        seq_len: int = 192,
+        seq_len: int = 96,
         pred_len: int = 96,
         input_dim: int = 21,
         output_dim: int = 1,
@@ -121,10 +121,10 @@ class iTransformer(nn.Module):
         # This is necessary because different variables may have different frequency characteristics
         # When use_mixed_batches=True, each variable has a different sequence length
         if use_mixed_batches and seq_lens is not None:
-            # seq_lens should be [192, 574, 574, ..., 48, 48, ...]
-            # 1 variable with 192 timesteps (T)
-            # 10 variables with 574 timesteps (Group A)
-            # 10 variables with 48 timesteps (Group B)
+            # seq_lens should be [96, 286, 286, ..., 24, 24, ...]
+            # 1 variable with 96 timesteps (T)
+            # 10 variables with 286 timesteps (Group A)
+            # 10 variables with 24 timesteps (Group B)
             self.seq_lens = seq_lens
             self.variable_embeddings = nn.ModuleList([
                 VariableEmbedding(seq_lens[i], d_model) for i in range(input_dim)
@@ -185,18 +185,18 @@ class iTransformer(nn.Module):
                 embedded_vars.append(var_embedded)
                 var_idx += 1
             
-            # Process Group A (10min) - 10 variables with 574 timesteps
-            A_data = x['A_10min_hist']  # (batch_size, 574, 10)
+            # Process Group A (10min) - 10 variables with 286 timesteps
+            A_data = x['A_10min_hist']  # (batch_size, 286, 10)
             for i in range(A_data.size(2)):
-                var_series = A_data[:, :, i]  # (batch_size, 574)
+                var_series = A_data[:, :, i]  # (batch_size, 286)
                 var_embedded = self.variable_embeddings[var_idx](var_series)
                 embedded_vars.append(var_embedded)
                 var_idx += 1
             
-            # Process Group B (120min) - 10 variables with 48 timesteps
-            B_data = x['B_120min_hist']  # (batch_size, 48, 10)
+            # Process Group B (120min) - 10 variables with 24 timesteps
+            B_data = x['B_120min_hist']  # (batch_size, 24, 10)
             for i in range(B_data.size(2)):
-                var_series = B_data[:, :, i]  # (batch_size, 48)
+                var_series = B_data[:, :, i]  # (batch_size, 24)
                 var_embedded = self.variable_embeddings[var_idx](var_series)
                 embedded_vars.append(var_embedded)
                 var_idx += 1

@@ -21,7 +21,7 @@ def quick_test_all_models():
     
     # Prepare dummy data
     batch_size = 2
-    seq_len = 192
+    seq_len = 96
     pred_len = 96
     input_dim = 21
     output_dim = 1

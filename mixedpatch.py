@@ -149,7 +149,7 @@ class MixedPatch(nn.Module):
     4. Projection: Linear layer to predict main variable T
     
     Args:
-        seq_len: Input sequence length for main variable T (e.g., 192)
+        seq_len: Input sequence length for main variable T (e.g., 96)
         pred_len: Prediction sequence length (e.g., 96)
         patch_len: Length of each patch for main variable T (default: 16)
         stride: Stride for patching main variable T (default: 8)
@@ -164,7 +164,7 @@ class MixedPatch(nn.Module):
     
     def __init__(
         self,
-        seq_len: int = 192,
+        seq_len: int = 96,
         pred_len: int = 96,
         patch_len: int = 16,
         stride: int = 8,
@@ -187,9 +187,9 @@ class MixedPatch(nn.Module):
         # Calculate number of patches based on main variable T
         self.num_patches = (seq_len - patch_len) // stride + 1
         
-        # Default sequence lengths: T(192), A(574), B(48)
+        # Default sequence lengths: T(96), A(286), B(24)
         if seq_lens is None:
-            seq_lens = [192, 574, 48]
+            seq_lens = [96, 286, 24]
         self.seq_lens = seq_lens
         
         # Patch embeddings for each variable group
@@ -269,24 +269,24 @@ class MixedPatch(nn.Module):
             batch_size = x['T_30min_hist'].size(0)
             
             # 1. Patch embedding for each variable group
-            # T: (batch_size, 192, 1) -> (batch_size, num_patches, d_model)
+            # T: (batch_size, 96, 1) -> (batch_size, num_patches, d_model)
             T_patches = self.T_patch_embed(x['T_30min_hist'])
             T_patches = self.pos_encoder(T_patches)
             
             # Group A: process each of the 10 variables
-            # A: (batch_size, 574, 10)
+            # A: (batch_size, 286, 10)
             A_patches_list = []
             for i in range(x['A_10min_hist'].size(2)):
-                A_var = x['A_10min_hist'][:, :, i:i+1]  # (batch_size, 574, 1)
+                A_var = x['A_10min_hist'][:, :, i:i+1]  # (batch_size, 286, 1)
                 A_var_patches = self.A_patch_embed(A_var)  # (batch_size, num_patches, d_model)
                 A_var_patches = self.pos_encoder(A_var_patches)
                 A_patches_list.append(A_var_patches)
             
             # Group B: process each of the 10 variables
-            # B: (batch_size, 48, 10)
+            # B: (batch_size, 24, 10)
             B_patches_list = []
             for i in range(x['B_120min_hist'].size(2)):
-                B_var = x['B_120min_hist'][:, :, i:i+1]  # (batch_size, 48, 1)
+                B_var = x['B_120min_hist'][:, :, i:i+1]  # (batch_size, 24, 1)
                 B_var_patches = self.B_patch_embed(B_var)  # (batch_size, num_patches, d_model)
                 B_var_patches = self.pos_encoder(B_var_patches)
                 B_patches_list.append(B_var_patches)

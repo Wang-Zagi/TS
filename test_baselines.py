@@ -17,7 +17,7 @@ def test_dlinear():
     
     # Create model
     model = DLinear(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         input_dim=21,
         output_dim=1,
@@ -27,7 +27,7 @@ def test_dlinear():
     
     # Test forward pass
     batch_size = 4
-    src = torch.randn(batch_size, 192, 21)
+    src = torch.randn(batch_size, 96, 21)
     
     output = model(src)
     assert output.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output.shape}"
@@ -40,7 +40,7 @@ def test_dlinear():
     
     # Test with individual=True
     model_individual = DLinear(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         input_dim=21,
         output_dim=1,
@@ -67,7 +67,7 @@ def test_timesnet():
     
     # Create model
     model = TimesNet(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         input_dim=21,
         output_dim=1,
@@ -81,7 +81,7 @@ def test_timesnet():
     
     # Test forward pass
     batch_size = 4
-    src = torch.randn(batch_size, 192, 21)
+    src = torch.randn(batch_size, 96, 21)
     
     output = model(src)
     assert output.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output.shape}"
@@ -107,7 +107,7 @@ def test_timemixer():
     
     # Create model
     model = TimeMixer(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         input_dim=21,
         output_dim=1,
@@ -120,7 +120,7 @@ def test_timemixer():
     
     # Test forward pass
     batch_size = 4
-    src = torch.randn(batch_size, 192, 21)
+    src = torch.randn(batch_size, 96, 21)
     
     output = model(src)
     assert output.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output.shape}"
@@ -146,7 +146,7 @@ def test_patchtst():
     
     # Create model
     model = PatchTST(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         patch_len=16,
         stride=8,
@@ -182,7 +182,7 @@ def test_patchtst():
     
     # Test with different patch configurations
     model_small_patch = PatchTST(
-        seq_len=192,
+        seq_len=96,
         pred_len=96,
         patch_len=8,
         stride=4,
@@ -207,15 +207,15 @@ def test_all_models_comparison():
     print("="*60)
     
     batch_size = 4
-    src = torch.randn(batch_size, 192, 21)
+    src = torch.randn(batch_size, 96, 21)
     src_univariate = torch.randn(batch_size, 192, 1)  # For PatchTST
     
     models = {
-        'DLinear': DLinear(seq_len=192, pred_len=96, input_dim=21, output_dim=1),
-        'DLinear (Individual)': DLinear(seq_len=192, pred_len=96, input_dim=21, output_dim=1, individual=True),
-        'TimesNet': TimesNet(seq_len=192, pred_len=96, input_dim=21, output_dim=1),
-        'TimeMixer': TimeMixer(seq_len=192, pred_len=96, input_dim=21, output_dim=1),
-        'PatchTST': PatchTST(seq_len=192, pred_len=96, patch_len=16, stride=8),
+        'DLinear': DLinear(seq_len=96, pred_len=96, input_dim=21, output_dim=1),
+        'DLinear (Individual)': DLinear(seq_len=96, pred_len=96, input_dim=21, output_dim=1, individual=True),
+        'TimesNet': TimesNet(seq_len=96, pred_len=96, input_dim=21, output_dim=1),
+        'TimeMixer': TimeMixer(seq_len=96, pred_len=96, input_dim=21, output_dim=1),
+        'PatchTST': PatchTST(seq_len=96, pred_len=96, patch_len=16, stride=8),
     }
     
     print(f"\n{'Model':<25} {'Parameters':>15} {'Output Shape':>20}")

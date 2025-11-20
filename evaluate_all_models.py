@@ -96,7 +96,7 @@ def load_model_and_params(model_dir, model_type, device):
                 dropout=0.1
             )
         elif model_type == 'itransformer':
-            seq_lens = [192] + [574] * 10 + [48] * 10
+            seq_lens = [96] + [286] * 10 + [24] * 10
             model = iTransformer(
                 seq_len=192,
                 pred_len=96,

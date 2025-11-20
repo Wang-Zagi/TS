@@ -13,7 +13,7 @@ GROUP_B_FILE = 'GroupB_120min.csv'
 
 
 def create_single_batches(
-        history_len: int = 192,  # 历史输入长度 (基于 T 30min 频率)
+        history_len: int = 96,  # 历史输入长度 (基于 T 30min 频率)
         future_len: int = 96,  # 未来目标长度 (基于 T 30min 频率)
         step_size: int = 96  # 窗口滑动步长 (默认无重叠)
 ) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
@@ -65,19 +65,19 @@ def create_single_batches(
 
 
 def create_mixed_batches(
-        history_len: int = 192,  # T (30min) 历史窗口长度
+        history_len: int = 96,  # T (30min) 历史窗口长度
         future_len: int = 96,  # T (30min) 未来目标长度
         step_size: int = 96
 ) -> Generator[Tuple[Dict[str, np.ndarray], np.ndarray], None, None]:
     """
-    读取多频率数据，构造 Seq2Seq 格式的训练批次 (X: 192, Y: 96)。
+    读取多频率数据，构造 Seq2Seq 格式的训练批次 (X: 96, Y: 96)。
 
     - 输入是三个不同频率的 DataFrame (内部读取)。
     - 输出的 X (历史输入) 是一个包含三个不同形状 NumPy 数组的字典。
 
     生成器返回:
         (X_input_dict, Y_target_array)
-        X_input_dict: 包含 T(192), A(574), B(48) 历史数据的字典。
+        X_input_dict: 包含 T(96), A(286), B(24) 历史数据的字典。
         Y_target_array: 包含 T(96) 未来目标值的 NumPy 数组。
     """
     try:
@@ -95,7 +95,7 @@ def create_mixed_batches(
     TOTAL_WINDOW = history_len + future_len
     n_t = len(df_t)
 
-    # 期望长度 (Group A: 574, Group B: 48)
+    # 期望长度 (Group A: 286, Group B: 24)
     expected_t_history_len = history_len
     expected_t_future_len = future_len
     expected_a_len = (history_len - 1) * 3 + 1
@@ -163,7 +163,7 @@ if __name__ == '__main__':
 
 
 def create_aligned_batches(
-        history_len: int = 192,
+        history_len: int = 96,
         future_len: int = 96,
         step_size: int = 96
 ) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:

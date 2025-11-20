@@ -245,7 +245,7 @@ class TimeMixer(nn.Module):
     - Output projection
     
     Args:
-        seq_len: Input sequence length (e.g., 192)
+        seq_len: Input sequence length (e.g., 96)
         pred_len: Prediction sequence length (e.g., 96)
         input_dim: Number of input features (e.g., 21)
         output_dim: Number of output features (e.g., 1)
@@ -258,7 +258,7 @@ class TimeMixer(nn.Module):
     
     def __init__(
         self,
-        seq_len: int = 192,
+        seq_len: int = 96,
         pred_len: int = 96,
         input_dim: int = 21,
         output_dim: int = 1,

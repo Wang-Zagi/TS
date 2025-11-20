@@ -25,7 +25,7 @@ def main():
     try:
         train_loader, val_loader, test_loader, norm_params = get_mixed_data_loaders(
             batch_size=4,
-            history_len=192,
+            history_len=96,
             future_len=96,
             step_size=96
         )

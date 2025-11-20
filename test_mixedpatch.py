@@ -28,7 +28,7 @@ def test_mixedpatch_creation():
         dim_feedforward=512,
         dropout=0.1,
         use_mixed_batches=True,
-        seq_lens=[192, 574, 48]
+        seq_lens=[96, 286, 24]
     )
     
     # Count parameters
@@ -53,7 +53,7 @@ def test_mixedpatch_forward_dict():
         dim_feedforward=512,
         dropout=0.1,
         use_mixed_batches=True,
-        seq_lens=[192, 574, 48]
+        seq_lens=[96, 286, 24]
     )
     
     batch_size = 4
@@ -61,8 +61,8 @@ def test_mixedpatch_forward_dict():
     # Create mixed batch input
     X_dict = {
         'T_30min_hist': torch.randn(batch_size, 192, 1),
-        'A_10min_hist': torch.randn(batch_size, 574, 10),
-        'B_120min_hist': torch.randn(batch_size, 48, 10)
+        'A_10min_hist': torch.randn(batch_size, 286, 10),
+        'B_120min_hist': torch.randn(batch_size, 24, 10)
     }
     
     # Forward pass
@@ -97,7 +97,7 @@ def test_mixedpatch_training_step():
         dim_feedforward=256,
         dropout=0.1,
         use_mixed_batches=True,
-        seq_lens=[192, 574, 48]
+        seq_lens=[96, 286, 24]
     )
     
     batch_size = 4
@@ -105,8 +105,8 @@ def test_mixedpatch_training_step():
     # Create mixed batch input
     X_dict = {
         'T_30min_hist': torch.randn(batch_size, 192, 1),
-        'A_10min_hist': torch.randn(batch_size, 574, 10),
-        'B_120min_hist': torch.randn(batch_size, 48, 10)
+        'A_10min_hist': torch.randn(batch_size, 286, 10),
+        'B_120min_hist': torch.randn(batch_size, 24, 10)
     }
     y_target = torch.randn(batch_size, 96, 1)
     

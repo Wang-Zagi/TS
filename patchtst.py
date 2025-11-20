@@ -96,7 +96,7 @@ class PatchTST(nn.Module):
     - Projection head: Maps to prediction length
     
     Args:
-        seq_len: Input sequence length (e.g., 192)
+        seq_len: Input sequence length (e.g., 96)
         pred_len: Prediction sequence length (e.g., 96)
         patch_len: Length of each patch (default: 16)
         stride: Stride for patching (default: 8)
@@ -109,7 +109,7 @@ class PatchTST(nn.Module):
     
     def __init__(
         self,
-        seq_len: int = 192,
+        seq_len: int = 96,
         pred_len: int = 96,
         patch_len: int = 16,
         stride: int = 8,

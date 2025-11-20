@@ -86,7 +86,7 @@ def main():
     # Model Architecture
     print("Model Architecture")
     print("-" * 70)
-    print("Input:  192 timesteps × 21 features")
+    print("Input:  96 timesteps × 21 features")
     print("        - 1 target variable: T (temperature)")
     print("        - 20 external variables: weather features")
     print()
