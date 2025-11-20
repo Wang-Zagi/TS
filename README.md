@@ -273,6 +273,38 @@ This will:
 - Generate visualization plots
 - Save results to the output directory
 
+### Evaluate All Models
+
+After training all models with `test_all_models.sh`, you can evaluate and compare all models:
+```bash
+python evaluate_all_models.py \
+    --checkpoints_dir ./checkpoints_complete \
+    --output_dir ./evaluation_results \
+    --num_samples 3 \
+    --batch_size 32
+```
+
+This will:
+- Load all trained models from the checkpoint directory
+- Evaluate each model on the test set
+- **Calculate MAE, MSE, and RMSE using denormalized (original) data**
+- Generate comparison plots:
+  - Individual plots for each model showing predictions vs actual temperature
+  - Combined comparison plot showing all models together
+  - Multiple sample plots for thorough evaluation
+- Save metrics summary to JSON file
+
+The `test_all_models.sh` script automatically calls this evaluation script at the end, so you'll get visualizations automatically after training.
+
+#### Visualization Output
+
+The evaluation generates several types of plots:
+1. **Individual Model Plots** (`comparison_sample_N.png`): Shows each model's predictions vs actual data with MAE/MSE in the title
+2. **Combined Comparison Plot** (`all_models_comparison.png`): Shows all models' predictions on the same plot for easy comparison
+3. **Metrics Summary** (`metrics_summary.json`): Contains MAE, MSE, and RMSE for all models
+
+All temperature values in plots are denormalized (original scale in °C).
+
 ## Model Architectures
 
 ### Transformer
