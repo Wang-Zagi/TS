@@ -47,102 +47,121 @@ def load_model_and_params(model_dir, model_type, device):
     # Load checkpoint to get model configuration
     checkpoint = torch.load(model_path, map_location=device)
     
-    # Create model based on type
-    if model_type == 'transformer':
-        model = TransformerTS(
-            input_dim=21,
-            output_dim=1,
-            d_model=128,
-            nhead=8,
-            num_encoder_layers=3,
-            num_decoder_layers=3,
-            dim_feedforward=512,
-            dropout=0.1
-        )
-    elif model_type == 'dlinear':
-        model = DLinear(
-            seq_len=192,
-            pred_len=96,
-            input_dim=21,
-            output_dim=1,
-            kernel_size=25,
-            individual=False
-        )
-    elif model_type == 'timesnet':
-        model = TimesNet(
-            seq_len=192,
-            pred_len=96,
-            input_dim=21,
-            output_dim=1,
-            d_model=128,
-            d_ff=128,
-            num_kernels=5,
-            top_k=5,
-            e_layers=2,
-            dropout=0.1
-        )
-    elif model_type == 'timemixer':
-        model = TimeMixer(
-            seq_len=192,
-            pred_len=96,
-            input_dim=21,
-            output_dim=1,
-            d_model=128,
-            d_ff=128,
-            e_layers=3,
-            dropout=0.1
-        )
-    elif model_type == 'itransformer':
-        seq_lens = [192] + [574] * 10 + [48] * 10
-        model = iTransformer(
-            seq_len=192,
-            pred_len=96,
-            input_dim=21,
-            output_dim=1,
-            d_model=128,
-            nhead=8,
-            num_layers=2,
-            dim_feedforward=512,
-            dropout=0.1,
-            use_mixed_batches=True,
-            seq_lens=seq_lens
-        )
-    elif model_type == 'patchtst':
-        model = PatchTST(
-            seq_len=192,
-            pred_len=96,
-            patch_len=16,
-            stride=8,
-            d_model=128,
-            nhead=8,
-            num_layers=3,
-            dim_feedforward=256,
-            dropout=0.1
-        )
-    elif model_type == 'mixedpatch':
-        seq_lens = [192, 574, 48]
-        model = MixedPatch(
-            seq_len=192,
-            pred_len=96,
-            patch_len=16,
-            stride=8,
-            d_model=128,
-            nhead=8,
-            num_layers=2,
-            dim_feedforward=512,
-            dropout=0.1,
-            use_mixed_batches=True,
-            seq_lens=seq_lens
-        )
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
-    
-    # Load state dict
-    model.load_state_dict(checkpoint['model_state_dict'])
-    model = model.to(device)
-    model.eval()
-    
-    return model, norm_params, checkpoint
+    # Try to load model with state dict to infer architecture
+    # This is a more robust approach that works with different configurations
+    try:
+        # Create a dummy model to get the state dict structure
+        state_dict = checkpoint['model_state_dict']
+        
+        # Infer model architecture from state dict
+        if model_type == 'transformer':
+            model = TransformerTS(
+                input_dim=21,
+                output_dim=1,
+                d_model=128,
+                nhead=8,
+                num_encoder_layers=3,
+                num_decoder_layers=3,
+                dim_feedforward=512,
+                dropout=0.1
+            )
+        elif model_type == 'dlinear':
+            model = DLinear(
+                seq_len=192,
+                pred_len=96,
+                input_dim=21,
+                output_dim=1,
+                kernel_size=25,
+                individual=False
+            )
+        elif model_type == 'timesnet':
+            model = TimesNet(
+                seq_len=192,
+                pred_len=96,
+                input_dim=21,
+                output_dim=1,
+                d_model=128,
+                d_ff=128,
+                num_kernels=5,
+                top_k=5,
+                e_layers=2,
+                dropout=0.1
+            )
+        elif model_type == 'timemixer':
+            # Infer d_model from state dict
+            if 'enc_embedding.weight' in state_dict:
+                d_model = state_dict['enc_embedding.weight'].shape[0]
+            else:
+                d_model = 128
+            
+            # Infer e_layers from number of mixing blocks
+            e_layers = sum(1 for key in state_dict.keys() if 'mixing_blocks.' in key and '.cross_layer.0.weight' in key)
+            
+            model = TimeMixer(
+                seq_len=192,
+                pred_len=96,
+                input_dim=21,
+                output_dim=1,
+                d_model=d_model,
+                d_ff=128,
+                e_layers=e_layers,
+                dropout=0.1
+            )
+        elif model_type == 'itransformer':
+            seq_lens = [192] + [574] * 10 + [48] * 10
+            model = iTransformer(
+                seq_len=192,
+                pred_len=96,
+                input_dim=21,
+                output_dim=1,
+                d_model=128,
+                nhead=8,
+                num_layers=2,
+                dim_feedforward=512,
+                dropout=0.1,
+                use_mixed_batches=True,
+                seq_lens=seq_lens
+            )
+        elif model_type == 'patchtst':
+            model = PatchTST(
+                seq_len=192,
+                pred_len=96,
+                patch_len=16,
+                stride=8,
+                d_model=128,
+                nhead=8,
+                num_layers=3,
+                dim_feedforward=256,
+                dropout=0.1
+            )
+        elif model_type == 'mixedpatch':
+            seq_lens = [192, 574, 48]
+            model = MixedPatch(
+                seq_len=192,
+                pred_len=96,
+                patch_len=16,
+                stride=8,
+                d_model=128,
+                nhead=8,
+                num_layers=2,
+                dim_feedforward=512,
+                dropout=0.1,
+                use_mixed_batches=True,
+                seq_lens=seq_lens
+            )
+        else:
+            raise ValueError(f"Unknown model type: {model_type}")
+        
+        # Load state dict
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model = model.to(device)
+        model.eval()
+        
+        return model, norm_params, checkpoint
+        
+    except Exception as e:
+        print(f"  Warning: Failed to load model: {e}")
+        return None, None, None
 
 
 def evaluate_model(model, test_loader, norm_params, model_type, device):
