@@ -2,6 +2,10 @@
 TimeMixer model for time series forecasting.
 TimeMixer uses multi-scale mixing in both past and future to model temporal patterns.
 
+This implementation follows the channel mixing pattern from the reference implementation,
+where channel mixing operates on permuted tensors (batch, d_model, seq_len) so that
+Linear layers operate across the sequence length dimension for each channel independently.
+
 Reference:
 TimeMixer: Decomposable Multiscale Mixing for Time Series Forecasting (ICLR 2024)
 https://arxiv.org/abs/2405.14616
