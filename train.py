@@ -20,6 +20,7 @@ from timemixer import TimeMixer
 from itransformer import iTransformer
 from patchtst import PatchTST
 from mixedpatch import MixedPatch
+from xpatch import xPatch
 from data_loader import get_data_loaders, get_mixed_data_loaders, get_single_data_loaders
 
 
@@ -95,6 +96,17 @@ def get_model(args):
             num_layers=args.num_encoder_layers,
             dim_feedforward=args.dim_feedforward,
             dropout=args.dropout
+        )
+    elif args.model_type == 'xpatch':
+        # xPatch uses multivariate input (all 21 features) with decomposition
+        model = xPatch(
+            seq_len=192,
+            pred_len=96,
+            input_dim=21,
+            patch_len=args.patch_len,
+            stride=args.stride,
+            revin=True,
+            ma_type='ema'
         )
     elif args.model_type == 'mixedpatch':
         # MixedPatch uses mixed frequency batches with patch-based architecture

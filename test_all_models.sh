@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Complete script to test all baseline models and new MixedPatch model
-# Tests: iTransformer, TimeMixer, DLinear, TimesNet, PatchTST, and MixedPatch
+# Tests: iTransformer, TimeMixer, DLinear, TimesNet, PatchTST, xPatch, and MixedPatch
 
 echo "========================================================================="
 echo "Testing All Models for Time Series Forecasting"
@@ -14,8 +14,9 @@ echo "    2. TimeMixer    - Multi-scale mixing for time series"
 echo "    3. DLinear      - Simple decomposition-based linear model"
 echo "    4. TimesNet     - Multi-period 2D convolution model"
 echo "    5. PatchTST     - Patch-based Time Series Transformer"
+echo "    6. xPatch       - Decomposition-based patch model with EMA/DEMA"
 echo "  New Model:"
-echo "    6. MixedPatch   - Mixed frequency patch-based transformer (NEW)"
+echo "    7. MixedPatch   - Mixed frequency patch-based transformer (NEW)"
 echo ""
 echo "All models predict temperature (T) from 192 timesteps to 96 timesteps"
 echo "========================================================================="
@@ -194,10 +195,41 @@ echo "PatchTST test completed. Results saved to ./checkpoints_complete/patchtst"
 echo ""
 
 # =============================================================================
-# Test 6: MixedPatch (NEW MODEL)
+# Test 6: xPatch (Baseline)
 # =============================================================================
 echo "========================================================================="
-echo "Test 6: MixedPatch (Proposed MODEL)"
+echo "Test 6: xPatch (Baseline)"
+echo "========================================================================="
+echo "Configuration:"
+echo "  - Patch length: 16"
+echo "  - Stride: 8"
+echo "  - Moving average type: EMA"
+echo "  - RevIN normalization: Yes"
+echo "  - Learning rate: 0.0001"
+echo "  - Batch size: ${BATCH_SIZE}"
+echo "  - Epochs: ${EPOCHS}"
+echo "  - Uses multivariate input (all 21 features)"
+echo "  - Decomposition-based approach with CNN"
+echo ""
+
+python train.py \
+    --model_type xpatch \
+    --patch_len 16 \
+    --stride 8 \
+    --batch_size ${BATCH_SIZE} \
+    --epochs ${EPOCHS} \
+    --lr 0.0001 \
+    --output_dir ./checkpoints_complete/xpatch
+
+echo ""
+echo "xPatch test completed. Results saved to ./checkpoints_complete/xpatch"
+echo ""
+
+# =============================================================================
+# Test 7: MixedPatch (NEW MODEL)
+# =============================================================================
+echo "========================================================================="
+echo "Test 7: MixedPatch (Proposed MODEL)"
 echo "========================================================================="
 echo "Configuration:"
 echo "  - Model dimension (d_model): 128"
@@ -269,6 +301,7 @@ display_results "TimeMixer" "./checkpoints_complete/timemixer/results.txt"
 display_results "TimesNet" "./checkpoints_complete/timesnet/results.txt"
 display_results "iTransformer" "./checkpoints_complete/itransformer/results.txt"
 display_results "PatchTST" "./checkpoints_complete/patchtst/results.txt"
+display_results "xPatch" "./checkpoints_complete/xpatch/results.txt"
 
 echo "=== NEW MODEL ==="
 echo ""
@@ -305,9 +338,15 @@ echo "   - Patch-based transformer"
 echo "   - Channel independence with patching"
 echo "   - State-of-the-art on many benchmarks"
 echo ""
+echo "6. xPatch:"
+echo "   - Decomposition-based patch model with EMA/DEMA"
+echo "   - Combines patch-based processing with moving average decomposition"
+echo "   - Uses RevIN normalization for better generalization"
+echo "   - Processes all 21 features together"
+echo ""
 echo "Proposed Model:"
 echo ""
-echo "6. MixedPatch:"
+echo "7. MixedPatch:"
 echo "   - Combines PatchTST architecture with mixed frequency data"
 echo "   - Patch-based processing for efficiency"
 echo "   - Handles variables with different sampling rates"
