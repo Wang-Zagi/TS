@@ -20,7 +20,7 @@ def create_single_batches(
     """
     读取 T (degC) 单一变量数据，并构造 Seq2Seq 格式的批次。
 
-    - X (历史输入): T (degC) 的 192 步历史数据。
+    - X (历史输入): T (degC) 的 96 步历史数据。
     - Y (未来目标): T (degC) 的 96 步未来数据。
 
     生成器返回:

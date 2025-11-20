@@ -41,7 +41,7 @@ def main():
     print("\n2. Testing model creation...")
     try:
         model = MixedPatch(
-            seq_len=192,
+            seq_len=96,
             pred_len=96,
             patch_len=16,
             stride=8,
@@ -51,7 +51,7 @@ def main():
             dim_feedforward=512,
             dropout=0.1,
             use_mixed_batches=True,
-            seq_lens=[192, 574, 48]
+            seq_lens=[96, 286, 24]
         )
         num_params = sum(p.numel() for p in model.parameters())
         print(f"   ✓ Model created successfully")

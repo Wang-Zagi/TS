@@ -177,10 +177,10 @@ class iTransformer(nn.Module):
             embedded_vars = []
             var_idx = 0
             
-            # Process T (30min) - 1 variable with 192 timesteps
-            T_data = x['T_30min_hist']  # (batch_size, 192, 1)
+            # Process T (30min) - 1 variable with 96 timesteps
+            T_data = x['T_30min_hist']  # (batch_size, 96, 1)
             for i in range(T_data.size(2)):
-                var_series = T_data[:, :, i]  # (batch_size, 192)
+                var_series = T_data[:, :, i]  # (batch_size, 96)
                 var_embedded = self.variable_embeddings[var_idx](var_series)
                 embedded_vars.append(var_embedded)
                 var_idx += 1

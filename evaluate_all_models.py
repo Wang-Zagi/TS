@@ -55,7 +55,7 @@ def load_model_and_params(model_dir, model_type, device):
         # Infer model architecture from state dict
         if model_type == 'dlinear':
             model = DLinear(
-                seq_len=192,
+                seq_len=96,
                 pred_len=96,
                 input_dim=21,
                 output_dim=1,
@@ -64,7 +64,7 @@ def load_model_and_params(model_dir, model_type, device):
             )
         elif model_type == 'timesnet':
             model = TimesNet(
-                seq_len=192,
+                seq_len=96,
                 pred_len=96,
                 input_dim=21,
                 output_dim=1,
@@ -86,7 +86,7 @@ def load_model_and_params(model_dir, model_type, device):
             e_layers = sum(1 for key in state_dict.keys() if 'mixing_blocks.' in key and '.cross_layer.0.weight' in key)
             
             model = TimeMixer(
-                seq_len=192,
+                seq_len=96,
                 pred_len=96,
                 input_dim=21,
                 output_dim=1,
@@ -98,7 +98,7 @@ def load_model_and_params(model_dir, model_type, device):
         elif model_type == 'itransformer':
             seq_lens = [96] + [286] * 10 + [24] * 10
             model = iTransformer(
-                seq_len=192,
+                seq_len=96,
                 pred_len=96,
                 input_dim=21,
                 output_dim=1,
@@ -112,7 +112,7 @@ def load_model_and_params(model_dir, model_type, device):
             )
         elif model_type == 'patchtst':
             model = PatchTST(
-                seq_len=192,
+                seq_len=96,
                 pred_len=96,
                 patch_len=16,
                 stride=8,
@@ -123,9 +123,9 @@ def load_model_and_params(model_dir, model_type, device):
                 dropout=0.1
             )
         elif model_type == 'mixedpatch':
-            seq_lens = [192, 574, 48]
+            seq_lens = [96, 286, 24]
             model = MixedPatch(
-                seq_len=192,
+                seq_len=96,
                 pred_len=96,
                 patch_len=16,
                 stride=8,
@@ -342,21 +342,21 @@ def main():
         if data_type == 'mixed':
             _, _, test_loader, _ = get_mixed_data_loaders(
                 batch_size=args.batch_size,
-                history_len=192,
+                history_len=96,
                 future_len=96,
                 step_size=96
             )
         elif data_type == 'single':
             _, _, test_loader, _ = get_single_data_loaders(
                 batch_size=args.batch_size,
-                history_len=192,
+                history_len=96,
                 future_len=96,
                 step_size=96
             )
         else:  # aligned
             _, _, test_loader, _ = get_data_loaders(
                 batch_size=args.batch_size,
-                history_len=192,
+                history_len=96,
                 future_len=96,
                 step_size=96
             )
