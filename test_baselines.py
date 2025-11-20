@@ -1,5 +1,5 @@
 """
-Test script for baseline models: DLinear, TimesNet, TimeMixer, PatchTST.
+Test script for baseline models: DLinear, TimesNet, TimeMixer, PatchTST, xPatch.
 """
 
 import torch
@@ -7,6 +7,7 @@ from dlinear import DLinear
 from timesnet import TimesNet
 from timemixer import TimeMixer
 from patchtst import PatchTST
+from xpatch import xPatch
 
 
 def test_dlinear():
@@ -200,6 +201,66 @@ def test_patchtst():
     print("\n✅ All PatchTST tests passed!")
 
 
+def test_xpatch():
+    """Test xPatch model."""
+    print("\n" + "="*60)
+    print("Testing xPatch Model")
+    print("="*60)
+    
+    # Create model
+    model = xPatch(
+        seq_len=192,
+        pred_len=96,
+        input_dim=21,
+        patch_len=16,
+        stride=8,
+        revin=True,
+        ma_type='ema'
+    )
+    
+    # Test forward pass with multivariate input
+    batch_size = 4
+    src = torch.randn(batch_size, 192, 21)
+    
+    output = model(src)
+    assert output.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output.shape}"
+    print(f"✓ Forward pass successful. Output shape: {output.shape}")
+    
+    # Test predict method
+    predictions = model.predict(src)
+    assert predictions.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {predictions.shape}"
+    print(f"✓ Predict method successful. Output shape: {predictions.shape}")
+    
+    # Test with univariate input
+    src_univariate = torch.randn(batch_size, 192, 1)
+    output_univariate = model(src_univariate)
+    assert output_univariate.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output_univariate.shape}"
+    print(f"✓ Univariate input handling successful. Output shape: {output_univariate.shape}")
+    
+    # Count parameters
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"✓ xPatch has {num_params:,} trainable parameters")
+    
+    # Test with different configurations
+    model_dema = xPatch(
+        seq_len=192,
+        pred_len=96,
+        input_dim=21,
+        patch_len=16,
+        stride=8,
+        revin=True,
+        ma_type='dema',
+        alpha=0.2,
+        beta=0.1
+    )
+    
+    output_dema = model_dema(src)
+    assert output_dema.shape == (batch_size, 96, 1), f"Expected shape {(batch_size, 96, 1)}, got {output_dema.shape}"
+    print(f"✓ DEMA configuration successful. Output shape: {output_dema.shape}")
+    
+    print("\n✅ All xPatch tests passed!")
+
+
 def test_all_models_comparison():
     """Compare all models."""
     print("\n" + "="*60)
@@ -216,6 +277,7 @@ def test_all_models_comparison():
         'TimesNet': TimesNet(seq_len=192, pred_len=96, input_dim=21, output_dim=1),
         'TimeMixer': TimeMixer(seq_len=192, pred_len=96, input_dim=21, output_dim=1),
         'PatchTST': PatchTST(seq_len=192, pred_len=96, patch_len=16, stride=8),
+        'xPatch': xPatch(seq_len=192, pred_len=96, input_dim=21, patch_len=16, stride=8),
     }
     
     print(f"\n{'Model':<25} {'Parameters':>15} {'Output Shape':>20}")
@@ -242,6 +304,7 @@ if __name__ == '__main__':
     test_timesnet()
     test_timemixer()
     test_patchtst()
+    test_xpatch()
     test_all_models_comparison()
     
     print("\n" + "="*60)
