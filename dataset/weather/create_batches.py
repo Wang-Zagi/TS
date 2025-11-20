@@ -95,7 +95,7 @@ def create_mixed_batches(
     TOTAL_WINDOW = history_len + future_len
     n_t = len(df_t)
 
-    # 修正后的期望长度 (Group A: 574, Group B: 48)
+    # 期望长度 (Group A: 574, Group B: 48)
     expected_t_history_len = history_len
     expected_t_future_len = future_len
     expected_a_len = (history_len - 1) * 3 + 1
@@ -138,7 +138,7 @@ def create_mixed_batches(
             continue
 
 
-# --- 使用示例 (与 create_aligned_batches 相同的使用方式) ---
+# --- 使用示例
 if __name__ == '__main__':
 
     mixed_batch_generator = create_mixed_batches()
@@ -199,7 +199,8 @@ def create_aligned_batches(
 
     # Group B (120min -> 30min) 上采样: 线性插值
     # 先 resample 生成 30min 索引，再插值填充 NaN
-    df_b_30min = df_b.resample('30min', origin='start').interpolate(method='linear')
+    # df_b_30min = df_b.resample('30min', origin='start').interpolate(method='linear')
+    df_b_30min = df_b.resample('30min', origin='start').interpolate(method='nearest')
 
     # --- 4. 合并数据 ---
 
